@@ -1,0 +1,21 @@
+-- BKKARI TECH V12: Email-only verification
+-- No SMS or WhatsApp OTP is used by the website.
+--
+-- 1) In Supabase Dashboard, open:
+--    Authentication -> Providers -> Email
+--    Enable "Confirm email".
+--
+-- 2) Configure the Auth URL / Redirect URLs to include the production site
+--    and the callback route used by the app, for example:
+--    https://bkkari-tech.vercel.app/auth/callback
+--
+-- 3) The account page uses Supabase Auth to show email verification status
+--    and resend the signup confirmation email for unverified email/password users.
+--
+-- 4) Google sign-in remains enabled. Google-authenticated users normally have
+--    a verified email claim.
+--
+-- 5) Phone numbers are stored as profile information only. No phone OTP, SMS
+--    provider, WhatsApp provider, or phone verification is required.
+--
+-- No SQL table or service-role key is required for email verification itself.

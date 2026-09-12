@@ -1,0 +1,40 @@
+export type Laptop = {
+  id: number;
+  sku: string | null;
+  name: string;
+  brand: string | null;
+  model: string | null;
+  category: string;
+  cpu: string | null;
+  ram: string | null;
+  storage: string | null;
+  gpu: string | null;
+  screen_size: string | null;
+  screen_resolution: string | null;
+  condition: string | null;
+  battery_health: string | null;
+  price: number;
+  prev_price: number | null;
+  is_offer?: boolean;
+  description: string | null;
+  features: string[];
+  images: string[];
+  stock_quantity: number;
+  is_available: boolean;
+  is_featured: boolean;
+  is_bestseller: boolean;
+  is_new: boolean;
+  gift_box: boolean;
+  gift_mouse: boolean;
+  gift_bag: boolean;
+  gift_software_pack: boolean;
+  warranty_days: number;
+};
+
+export type Governorate = {
+  id: number;
+  name: string;
+  shipping_cost: number;
+  delivery_days: string | null;
+  is_active: boolean;
+};
