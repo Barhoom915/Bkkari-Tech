@@ -1,0 +1,9 @@
+import Link from "next/link";
+import Header from "@/app/components/Header";
+import Footer from "@/app/components/Footer";
+import { getSiteSetting } from "@/app/lib/site-settings";
+import { supabase } from "@/app/lib/supabase";
+
+type Delivery = { title: string; intro: string; home: string; governorates: string; note: string };
+const fallback: Delivery = { title: "التوصيل والشحن", intro: "منوصل طلباتك لباب المنزل، والشحن متاح للمحافظات السورية حسب المحافظة.", home: "توصيل لباب المنزل — مننسق معك العنوان قبل التسليم.", governorates: "شحن لكل المحافظات الفعالة بالموقع، وتكلفة الشحن ومدة الوصول بتختلف حسب المحافظة.", note: "للطلبات الكبيرة أو خدمات البرمجة، مننسق التفاصيل معك بشكل مباشر." };
+export default async function DeliveryPage(){const content=await getSiteSetting<Delivery>("delivery",fallback);const {data:govs}=await supabase.from("governorates").select("name,shipping_cost,delivery_days").eq("is_active",true).order("id");return <><Header/><main className="info-page" dir="rtl"><div className="info-wrap"><div className="info-hero"><span>DELIVERY / SHIPPING</span><h1>{content.title}</h1><p>{content.intro}</p></div><section className="delivery-grid"><article className="info-card"><div className="info-icon">🚚</div><h2>توصيل لباب المنزل</h2><p>{content.home}</p><Link href="/track" className="info-action">تتبع طلبك ←</Link></article><article className="info-card"><div className="info-icon">📦</div><h2>شحن لكل المحافظات</h2><p>{content.governorates}</p><p className="muted">{content.note}</p></article></section><section className="shipping-table"><div className="info-section-head"><div><span>AVAILABLE AREAS</span><h2>المحافظات وتكلفة الشحن</h2></div></div><div className="shipping-rows">{(govs??[]).map((g)=><div key={g.name}><b>{g.name}</b><span>{g.delivery_days||"حسب التنسيق"}</span><strong>${Number(g.shipping_cost).toFixed(2)}</strong></div>)}</div></section></div></main><Footer/></>}
