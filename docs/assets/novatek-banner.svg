@@ -1,0 +1,25 @@
+<svg width="1400" height="320" viewBox="0 0 1400 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1400" y2="320" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B0B0F"/>
+      <stop offset="1" stop-color="#17120E"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="190" y1="70" x2="1230" y2="250" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF7A00"/>
+      <stop offset="1" stop-color="#FF9A3D"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="320" rx="28" fill="url(#bg)"/>
+  <circle cx="1230" cy="35" r="170" fill="#FF7A00" fill-opacity="0.08"/>
+  <circle cx="150" cy="300" r="180" fill="#FF7A00" fill-opacity="0.06"/>
+  <path d="M0 252C240 180 390 300 620 232C850 164 1030 200 1400 92" stroke="#FF7A00" stroke-opacity="0.18" stroke-width="2"/>
+  <g transform="translate(105 78)">
+    <rect width="132" height="132" rx="34" fill="#111116" stroke="#FF7A00" stroke-width="3"/>
+    <path d="M30 34L64 22L103 38L92 101L64 112L37 101L30 34Z" fill="#FF7A00"/>
+    <path d="M47 44L64 37L84 45L78 88L64 95L50 88L47 44Z" fill="#0B0B0F"/>
+    <path d="M56 48L66 45L76 49L72 79L64 83L57 79L56 48Z" fill="white"/>
+  </g>
+  <text x="275" y="132" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="70" font-weight="800" letter-spacing="2">NOVATEK</text>
+  <text x="280" y="181" fill="#FF9A3D" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700" letter-spacing="5">SMART COMMERCE</text>
+  <text x="280" y="224" fill="#D7D7D9" font-family="Arial, Helvetica, sans-serif" font-size="22">Arabic-first e-commerce • Supabase • Next.js • Vercel</text>
+</svg>
