@@ -1,13 +1,13 @@
-# NOVATEK V98.24 — Wallet Payment UI
+# NOVATEK V98.24
 
-- Redesigned `/wallet` top-up UI into selectable payment circles/cards.
-- Sham Cash: SYP and USD choices.
-- Added Banque Bemo Saudi Fransi account flow.
-- Added Syria International Islamic Bank account flow.
-- Added hand-delivery option.
-- Bank/SYP flow calculates credited USD using the configured `wallet_exchange_rate`.
-- Transfer receipt + transaction/reference number are required for electronic payment methods.
-- Top-up requests record payment method, source currency, sent amount, exchange rate, credited amount, and destination account.
-- Existing `wallet_topup_requests` rows remain compatible.
+## AI Chat Stability & API Optimization
 
-SQL: `supabase/v24_wallet_payment_methods.sql`
+- Gemini is now isolated from external research failures.
+- Supports both `message.text` and `message.content`.
+- External laptop research only runs when the user requests current/researched information.
+- PricesAPI is not triggered for every laptop question.
+- Research/cache errors no longer break Gemini chat.
+- Gemini errors are logged server-side without exposing the API key.
+- Gemini request timeout reduced to 20 seconds.
+- Gemini output limit increased to 700 tokens.
+- V98.24 preserves the V98.23 Smart Compare functionality.
