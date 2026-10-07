@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: NOVATEK documentation
+    url: https://github.com/Barhoom915/Bkkari-Tech#-documentation
+    about: Read the project documentation before opening an issue.
