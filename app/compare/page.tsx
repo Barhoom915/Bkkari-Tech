@@ -45,7 +45,7 @@ function priceValueScore(l: Laptop) { return performanceScore(l) / Math.max(1, N
 
 export default async function ComparePage({ searchParams }: { searchParams: Promise<{ ids?: string }> }) {
   const { ids = "" } = await searchParams;
-  const numbers = ids.split(",").map(Number).filter(Boolean).slice(0, 3);
+  const numbers = ids.split(",").map(Number).filter(Boolean).slice(0, 2);
   const { data } = numbers.length ? await supabase.from("laptops").select("*").in("id", numbers) : { data: [] as Laptop[] };
   const laptops = ((data || []) as Laptop[]).filter(l => Boolean(l.images?.[0]));
   const bestPerformance = [...laptops].sort((a, b) => performanceScore(b) - performanceScore(a))[0];
@@ -69,6 +69,6 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       </section>
       <section className="compare-difference"><div className="compare-section-label">الفرق بالتفصيل</div><h2>وين كل جهاز بيتفوّق؟</h2><div className="compare-difference-list">{dimensions.map(d => { const winner = winnerFor(d, laptops); return <article key={d.key}><span>{d.label}</span><div><b>الأفضل: {winner?.name}</b><p>{winner ? d.explain(winner) : ""}</p></div></article>; })}</div></section>
       <section className="compare-final"><span>الخلاصة</span><h2>{bestPerformance?.name} هو الأقوى إجمالاً، لكن مو بالضرورة هو الأفضل لكل شخص.</h2><p>إذا أولويتك الألعاب والتصميم، ركّز على كرت الشاشة والمعالج. للعمل والدراسة، الرام والتخزين والبطارية قد تكون أهم. لذلك النتيجة النهائية تعتمد على استخدامك وسعرك المستهدف.</p></section>
-    </> : <div className="unified-empty">اختار جهازين أو ثلاثة من صفحة اللابتوبات حتى نخبرك أيهم الأفضل ونوضح الفرق بينهم.</div>}
+    </> : <div className="unified-empty">اختار جهازين من صفحة اللابتوبات حتى نخبرك أيهم الأفضل ونوضح الفرق بينهم.</div>}
   </main><Footer /></>;
 }
