@@ -1,33 +1,36 @@
 type ChatMessage = {
-  role: string;
+  role: "user" | "assistant";
   text: string;
 };
 
-const SYSTEM_PROMPT =
-  "أنت مساعد NOVATEK. " +
-  "أجب بالعربية الشامية بشكل واضح وطبيعي ومفيد. " +
-  "لا تخترع أسعاراً أو مخزوناً أو مواصفات. " +
-  "إذا لم تكن المعلومة مؤكدة، قل ذلك بوضوح. " +
-  "ساعد المستخدم بمنتجات وخدمات NOVATEK.";
+type ProviderMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
 
-const TIMEOUT_MS = 8000;
+const SYSTEM_PROMPT = `
+أنت NOVATEK AI، المساعد الذكي الرسمي لمتجر NOVATEK.
+جاوب باللهجة السورية بشكل طبيعي وواضح ومختصر.
+إذا كان السؤال عن منتج أو لابتوب، اذكر المواصفات المهمة فقط.
+لا تخترع أسعار أو معلومات غير مؤكدة.
+إذا تم إعطاؤك معلومات من بحث خارجي، استخدمها بحذر واذكر المصادر عند الحاجة.
+`;
 
-function buildMessages(input: string, history: ChatMessage[] = []) {
+const TIMEOUT_MS = 12000;
+
+function buildMessages(
+  input: string,
+  history: ChatMessage[] = []
+): ProviderMessage[] {
   return [
     {
       role: "system",
       content: SYSTEM_PROMPT,
     },
-    ...history
-      .slice(-10)
-      .map((message) => ({
-        role:
-          message.role === "assistant" || message.role === "model"
-            ? "assistant"
-            : "user",
-        content: message.text,
-      }))
-      .filter((message) => message.content),
+    ...history.slice(-12).map((message) => ({
+      role: message.role,
+      content: message.text,
+    })),
     {
       role: "user",
       content: input,
@@ -39,12 +42,9 @@ async function fetchWithTimeout(
   url: string,
   options: RequestInit,
   timeout = TIMEOUT_MS
-) {
+): Promise<Response> {
   const controller = new AbortController();
-
-  const timer = setTimeout(() => {
-    controller.abort();
-  }, timeout);
+  const timer = setTimeout(() => controller.abort(), timeout);
 
   try {
     return await fetch(url, {
@@ -56,6 +56,82 @@ async function fetchWithTimeout(
   }
 }
 
+function getErrorBody(value: unknown): string {
+  if (value instanceof Error) {
+    return value.message;
+  }
+
+  return String(value);
+}
+
+async function askAshna(
+  input: string,
+  history: ChatMessage[]
+): Promise<string | null> {
+  const apiKey = process.env.ASHNA_API_KEY;
+
+  if (!apiKey) {
+    console.warn("NOVATEK Ashna: ASHNA_API_KEY is missing");
+    return null;
+  }
+
+  const model = process.env.ASHNA_MODEL || "gpt-4o-mini";
+
+  try {
+    const messages = buildMessages(input, history);
+
+    const res = await fetchWithTimeout(
+      "https://api.ashna.ai/v1/api/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.3,
+          max_tokens: 700,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+
+      console.error(
+        "NOVATEK Ashna API error:",
+        JSON.stringify({
+          status: res.status,
+          model,
+          body: body.slice(0, 500),
+        })
+      );
+
+      return null;
+    }
+
+    const data = await res.json();
+
+    const content =
+      data?.choices?.[0]?.message?.content ??
+      data?.choices?.[0]?.text ??
+      "";
+
+    return typeof content === "string" && content.trim()
+      ? content.trim()
+      : null;
+  } catch (error) {
+    console.error(
+      "NOVATEK Ashna request failed:",
+      getErrorBody(error)
+    );
+
+    return null;
+  }
+}
+
 async function askGroq(
   input: string,
   history: ChatMessage[]
@@ -63,7 +139,7 @@ async function askGroq(
   const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
-    console.error("NOVATEK Groq error: GROQ_API_KEY is missing");
+    console.warn("NOVATEK Groq: GROQ_API_KEY is missing");
     return null;
   }
 
@@ -71,6 +147,8 @@ async function askGroq(
     process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
   try {
+    const messages = buildMessages(input, history);
+
     const res = await fetchWithTimeout(
       "https://api.groq.com/openai/v1/chat/completions",
       {
@@ -81,7 +159,7 @@ async function askGroq(
         },
         body: JSON.stringify({
           model,
-          messages: buildMessages(input, history),
+          messages,
           reasoning_effort: "low",
           temperature: 0.3,
           max_tokens: 700,
@@ -104,24 +182,17 @@ async function askGroq(
       return null;
     }
 
-    const body = await res.json();
+    const data = await res.json();
 
-    const reply =
-      body?.choices?.[0]?.message?.content?.trim();
+    const content = data?.choices?.[0]?.message?.content;
 
-    return reply || null;
+    return typeof content === "string" && content.trim()
+      ? content.trim()
+      : null;
   } catch (error) {
     console.error(
       "NOVATEK Groq request failed:",
-      JSON.stringify({
-        model,
-        error:
-          error instanceof Error
-            ? error.name === "AbortError"
-              ? "Groq request timed out"
-              : error.message
-            : "unknown error",
-      })
+      getErrorBody(error)
     );
 
     return null;
@@ -135,8 +206,8 @@ async function askOpenRouter(
   const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
-    console.error(
-      "NOVATEK OpenRouter error: OPENROUTER_API_KEY is missing"
+    console.warn(
+      "NOVATEK OpenRouter: OPENROUTER_API_KEY is missing"
     );
     return null;
   }
@@ -145,6 +216,8 @@ async function askOpenRouter(
     process.env.OPENROUTER_MODEL || "openrouter/free";
 
   try {
+    const messages = buildMessages(input, history);
+
     const res = await fetchWithTimeout(
       "https://openrouter.ai/api/v1/chat/completions",
       {
@@ -157,7 +230,7 @@ async function askOpenRouter(
         },
         body: JSON.stringify({
           model,
-          messages: buildMessages(input, history),
+          messages,
           temperature: 0.3,
           max_tokens: 700,
         }),
@@ -179,24 +252,17 @@ async function askOpenRouter(
       return null;
     }
 
-    const body = await res.json();
+    const data = await res.json();
 
-    const reply =
-      body?.choices?.[0]?.message?.content?.trim();
+    const content = data?.choices?.[0]?.message?.content;
 
-    return reply || null;
+    return typeof content === "string" && content.trim()
+      ? content.trim()
+      : null;
   } catch (error) {
     console.error(
       "NOVATEK OpenRouter request failed:",
-      JSON.stringify({
-        model,
-        error:
-          error instanceof Error
-            ? error.name === "AbortError"
-              ? "OpenRouter request timed out"
-              : error.message
-            : "unknown error",
-      })
+      getErrorBody(error)
     );
 
     return null;
@@ -210,43 +276,32 @@ async function askGeminiProvider(
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    console.error(
-      "NOVATEK Gemini error: GEMINI_API_KEY is missing"
-    );
+    console.warn("NOVATEK Gemini: GEMINI_API_KEY is missing");
     return null;
   }
 
   const model =
     process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
-  const contents = history
-    .slice(-10)
-    .map((message) => ({
-      role:
-        message.role === "assistant" || message.role === "model"
-          ? "model"
-          : "user",
-      parts: [{ text: message.text }],
-    }))
-    .filter((message) => message.parts[0].text);
-
-  contents.push({
-    role: "user",
-    parts: [{ text: input }],
-  });
-
-  const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/` +
-    `${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
   try {
+    const contents = history
+      .slice(-12)
+      .map((message) => ({
+        role: message.role === "assistant" ? "model" : "user",
+        parts: [{ text: message.text }],
+      }));
+
+    contents.push({
+      role: "user",
+      parts: [{ text: input }],
+    });
+
     const res = await fetchWithTimeout(
-      url,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
         },
         body: JSON.stringify({
           systemInstruction: {
@@ -254,14 +309,14 @@ async function askGeminiProvider(
           },
           contents,
           generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 700,
             thinkingConfig: {
               thinkingLevel: "low",
             },
-            maxOutputTokens: 700,
           },
         }),
-      },
-      8000
+      }
     );
 
     if (!res.ok) {
@@ -279,26 +334,26 @@ async function askGeminiProvider(
       return null;
     }
 
-    const body = await res.json();
+    const data = await res.json();
 
-    const reply = body?.candidates?.[0]?.content?.parts
-      ?.map((part: any) => part?.text || "")
+    const parts = data?.candidates?.[0]?.content?.parts;
+
+    if (!Array.isArray(parts)) {
+      return null;
+    }
+
+    const content = parts
+      .map((part: any) =>
+        typeof part?.text === "string" ? part.text : ""
+      )
       .join("")
       .trim();
 
-    return reply || null;
+    return content || null;
   } catch (error) {
     console.error(
       "NOVATEK Gemini request failed:",
-      JSON.stringify({
-        model,
-        error:
-          error instanceof Error
-            ? error.name === "AbortError"
-              ? "Gemini request timed out"
-              : error.message
-            : "unknown error",
-      })
+      getErrorBody(error)
     );
 
     return null;
@@ -308,41 +363,44 @@ async function askGeminiProvider(
 export async function askGemini(
   input: string,
   history: ChatMessage[] = []
-) {
-  console.log("NOVATEK AI: trying Groq");
+): Promise<string | null> {
+  const providers = [
+    {
+      name: "Ashna",
+      fn: () => askAshna(input, history),
+    },
+    {
+      name: "Groq",
+      fn: () => askGroq(input, history),
+    },
+    {
+      name: "OpenRouter",
+      fn: () => askOpenRouter(input, history),
+    },
+    {
+      name: "Gemini",
+      fn: () => askGeminiProvider(input, history),
+    },
+  ];
 
-  const groqReply = await askGroq(input, history);
+  for (const provider of providers) {
+    try {
+      const reply = await provider.fn();
 
-  if (groqReply) {
-    console.log("NOVATEK AI: Groq succeeded");
-    return groqReply;
+      if (reply) {
+        console.log(
+          `NOVATEK AI provider: ${provider.name}`
+        );
+
+        return reply;
+      }
+    } catch (error) {
+      console.error(
+        `NOVATEK ${provider.name} provider failed:`,
+        getErrorBody(error)
+      );
+    }
   }
-
-  console.log("NOVATEK AI: Groq failed, trying OpenRouter");
-
-  const openRouterReply = await askOpenRouter(
-    input,
-    history
-  );
-
-  if (openRouterReply) {
-    console.log("NOVATEK AI: OpenRouter succeeded");
-    return openRouterReply;
-  }
-
-  console.log("NOVATEK AI: OpenRouter failed, trying Gemini");
-
-  const geminiReply = await askGeminiProvider(
-    input,
-    history
-  );
-
-  if (geminiReply) {
-    console.log("NOVATEK AI: Gemini succeeded");
-    return geminiReply;
-  }
-
-  console.error("NOVATEK AI: all providers failed");
 
   return null;
 }
