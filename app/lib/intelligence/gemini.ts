@@ -64,7 +64,9 @@ export async function askGemini(
         },
         contents,
         generationConfig: {
-          temperature: 0.3,
+          thinkingConfig: {
+            thinkingLevel: "low"
+          },
           maxOutputTokens: 700,
         },
       }),
