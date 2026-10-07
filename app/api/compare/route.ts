@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     if (cached) {
       const consumed = await consumeComparison(service, userId, used, limit);
       if (!consumed) return NextResponse.json({ error: "تعذر تحديث رصيد المقارنات. جرّب مرة ثانية." }, { status: 500 });
-      return NextResponse.json({ ...cached.facts, sources: cached.sources, cached: true, quota: consumed });
+      return NextResponse.json({ ...cached.facts, sources: cached.sources, research: (cached.facts as any)?.research || [], cached: true, quota: consumed });
     }
 
     const research = await Promise.all(laptops.map(async (l) => {
@@ -83,7 +83,11 @@ export async function POST(request: Request) {
       const winner = [...localScores].sort((a,b)=>b.score-a.score)[0];
       result = { winnerId: winner.id, winnerScore: winner.score, reason: "النتيجة مبنية على تفضيلاتك ومواصفات الجهازين المتوفرة حالياً.", categoryScores: [], warnings: [] };
     }
-    const payload = { ...result, sources: research.flatMap(r => r.sources) };
+    const payload = {
+      ...result,
+      sources: research.flatMap(r => r.sources),
+      research: research.map((r) => ({ query: r.query, summary: r.summary, facts: r.facts, sources: r.sources, prices: r.prices || [] })),
+    };
     await writeCache(cacheKey, { query: cacheKey, summary: result.reason, facts: payload, sources: payload.sources, fetchedAt: new Date().toISOString() }, 86400);
     const consumed = await consumeComparison(service, userId, used, limit);
     if (!consumed) return NextResponse.json({ error: "تعذر تحديث رصيد المقارنات. جرّب مرة ثانية." }, { status: 500 });
