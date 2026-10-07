@@ -33,6 +33,11 @@ export async function POST(request: Request) {
     const { data: authData } = await serverSupabase.auth.getUser();
     if (!authData.user) return NextResponse.json({ error: "سجّل دخولك حتى تستخدم المقارنة." }, { status: 401 });
     const userId = authData.user.id;
+    const serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !serviceKey) {
+      console.error("NOVATEK comparison quota is not configured: missing Supabase service key");
+      return NextResponse.json({ error: "تعذر تجهيز المقارنة حالياً. جرّب مرة ثانية لاحقاً." }, { status: 503 });
+    }
     const service = getServiceClient();
     const { data: usageRow } = await service.from("comparison_usage").select("comparison_count,free_limit,reset_at").eq("user_id", userId).maybeSingle();
     const now = Date.now();
@@ -58,10 +63,15 @@ export async function POST(request: Request) {
       const key = `laptop-research:${l.id}:${l.name}`;
       const hit = await readCache(key, 604800);
       if (hit) return hit;
-      const fresh = await researchLaptop(`${l.name} ${l.cpu || ""} ${l.gpu || ""} specifications review`);
-      const merged = { query: l.name, summary: fresh.map(x => x.summary).join("\n\n"), facts: {}, sources: fresh.flatMap(x => x.sources), prices: fresh.flatMap(x => x.prices || []), fetchedAt: new Date().toISOString() };
-      if (fresh.length) await writeCache(key, merged, 604800);
-      return merged;
+      try {
+        const fresh = await researchLaptop(`${l.name} ${l.cpu || ""} ${l.gpu || ""} specifications review`);
+        const merged = { query: l.name, summary: fresh.map(x => x.summary).filter(Boolean).join("\n\n"), facts: {}, sources: fresh.flatMap(x => x.sources), prices: fresh.flatMap(x => x.prices || []), fetchedAt: new Date().toISOString() };
+        if (fresh.length) await writeCache(key, merged, 604800);
+        return merged;
+      } catch (error) {
+        console.error(`NOVATEK research error for laptop ${l.id}:`, error);
+        return { query: l.name, summary: "", facts: {}, sources: [], prices: [], fetchedAt: new Date().toISOString() };
+      }
     }));
 
     const localScores = laptops.map(l => ({ id: l.id, score: score(l, preferences) }));
@@ -89,7 +99,15 @@ async function consumeComparison(service: ReturnType<typeof getServiceClient>, u
   resetAt.setMonth(resetAt.getMonth() + 1, 1);
   resetAt.setHours(0, 0, 0, 0);
   const nextUsed = used + 1;
-  const { error } = await service.from("comparison_usage").upsert({ user_id: userId, comparison_count: nextUsed, free_limit: limit, reset_at: resetAt.toISOString() }, { onConflict: "user_id" });
-  if (error) { console.error("NOVATEK comparison quota error:", error); return null; }
+  const { error } = await service.from("comparison_usage").upsert({
+    user_id: userId,
+    comparison_count: nextUsed,
+    free_limit: limit,
+    reset_at: resetAt.toISOString(),
+  }, { onConflict: "user_id" });
+  if (error) {
+    console.error("NOVATEK comparison quota error:", error);
+    return null;
+  }
   return { used: nextUsed, remaining: Math.max(0, limit - nextUsed), limit };
 }
