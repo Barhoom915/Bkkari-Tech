@@ -1,0 +1,4 @@
+import Link from "next/link";
+import Header from "@/app/components/Header";
+import Footer from "@/app/components/Footer";
+export default function NotFound(){return <><Header/><main className="info-page" dir="rtl"><div className="info-wrap"><section className="info-empty" style={{marginTop:40}}><div style={{fontFamily:"var(--font-mono)",fontSize:44,fontWeight:900,color:"var(--blue)"}}>404</div><h1 style={{fontSize:26,fontWeight:950,color:"var(--ink)",marginTop:10}}>الصفحة مو موجودة</h1><p style={{marginTop:8}}>الرابط اللي فتحته مو متوفر حالياً. استخدم أحد الأقسام التالية.</p><div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginTop:18}}><Link className="info-action" href="/">الرئيسية</Link><Link className="info-action" href="/categories">الأقسام</Link><Link className="info-action" href="/contact">تواصل معنا</Link></div></section></div></main><Footer/></>}
