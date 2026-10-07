@@ -175,7 +175,7 @@ ${sources
       .filter((message: any) => message.text);
 
     /*
-     * Gemini هو المحرك الأساسي.
+     * محرك الذكاء الاصطناعي متعدد المزودين.
      * البحث الخارجي مجرد Context إضافي.
      */
     const reply = await askGemini(
