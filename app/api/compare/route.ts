@@ -27,7 +27,7 @@ function score(l: Laptop, p: ComparisonPreferences) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const ids = Array.from(new Set((body.ids || []).map(Number).filter(Boolean))).slice(0, 2);
+    const ids: number[] = Array.from(new Set<number>((Array.isArray(body.ids) ? body.ids : []).map(Number).filter((id: number) => Number.isFinite(id) && id > 0))).slice(0, 2);
     const preferences = body.preferences as ComparisonPreferences;
     if (ids.length !== 2) return NextResponse.json({ error: "اختار جهازين بالضبط." }, { status: 400 });
 
