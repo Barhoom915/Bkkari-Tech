@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/app/lib/supabase";
 import { useCart } from "@/app/lib/cart-context";
 import type { Laptop } from "@/app/lib/types";
+import CompareAnotherLaptop from "./CompareAnotherLaptop";
 
 export default function ProductActions({ laptop }: { laptop: Laptop }) {
   const { addItem } = useCart();
@@ -49,14 +50,7 @@ export default function ProductActions({ laptop }: { laptop: Laptop }) {
         >
           {added ? "✓ انضاف للسلة" : "أضف للسلة"}
         </motion.button>
-        <a
-          href={`https://wa.me/963936426605?text=${encodeURIComponent(`مرحبا، بدي أستفسر عن: ${laptop.name}`)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center rounded-full border border-line px-5 text-sm text-ink-soft transition-colors hover:border-blue hover:text-blue"
-        >
-          واتساب
-        </a>
+        <CompareAnotherLaptop current={laptop} />
       </div>
     </div>
   );

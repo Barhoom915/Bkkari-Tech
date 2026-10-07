@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/app/lib/supabase";
+import { createClient as createServerClient, getServiceClient } from "@/app/lib/supabase-server";
 import { askGemini } from "@/app/lib/intelligence/gemini";
 import { readCache, writeCache } from "@/app/lib/intelligence/cache";
 import { researchLaptop } from "@/app/lib/intelligence/providers";
@@ -28,6 +29,17 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const ids: number[] = Array.from(new Set<number>((Array.isArray(body.ids) ? body.ids : []).map(Number).filter((id: number) => Number.isFinite(id) && id > 0))).slice(0, 2);
+    const serverSupabase = await createServerClient();
+    const { data: authData } = await serverSupabase.auth.getUser();
+    if (!authData.user) return NextResponse.json({ error: "سجّل دخولك حتى تستخدم المقارنة." }, { status: 401 });
+    const userId = authData.user.id;
+    const service = getServiceClient();
+    const { data: usageRow } = await service.from("comparison_usage").select("comparison_count,free_limit,reset_at").eq("user_id", userId).maybeSingle();
+    const now = Date.now();
+    let used = Number(usageRow?.comparison_count ?? 0);
+    if (usageRow?.reset_at && new Date(usageRow.reset_at).getTime() <= now) used = 0;
+    const limit = 10;
+    if (used >= limit) return NextResponse.json({ error: "وصلت للحد الشهري للمقارنات (10 مقارنات). بيتجدد رصيدك مع بداية الشهر الجاي.", quota: { used, remaining: 0, limit } }, { status: 429 });
     const preferences = body.preferences as ComparisonPreferences;
     if (ids.length !== 2) return NextResponse.json({ error: "اختار جهازين بالضبط." }, { status: 400 });
 
@@ -36,7 +48,11 @@ export async function POST(request: Request) {
     const laptops = data as Laptop[];
     const cacheKey = `comparison:${ids.sort((a: number, b: number) => a - b).join("-")}:${JSON.stringify(preferences)}`;
     const cached = await readCache(cacheKey, 86400);
-    if (cached) return NextResponse.json({ ...cached.facts, sources: cached.sources, cached: true });
+    if (cached) {
+      const consumed = await consumeComparison(service, userId, used, limit);
+      if (!consumed) return NextResponse.json({ error: "تعذر تحديث رصيد المقارنات. جرّب مرة ثانية." }, { status: 500 });
+      return NextResponse.json({ ...cached.facts, sources: cached.sources, cached: true, quota: consumed });
+    }
 
     const research = await Promise.all(laptops.map(async (l) => {
       const key = `laptop-research:${l.id}:${l.name}`;
@@ -59,8 +75,21 @@ export async function POST(request: Request) {
     }
     const payload = { ...result, sources: research.flatMap(r => r.sources) };
     await writeCache(cacheKey, { query: cacheKey, summary: result.reason, facts: payload, sources: payload.sources, fetchedAt: new Date().toISOString() }, 86400);
-    return NextResponse.json(payload);
-  } catch {
-    return NextResponse.json({ error: "تعذر إجراء المقارنة حالياً." }, { status: 500 });
+    const consumed = await consumeComparison(service, userId, used, limit);
+    if (!consumed) return NextResponse.json({ error: "تعذر تحديث رصيد المقارنات. جرّب مرة ثانية." }, { status: 500 });
+    return NextResponse.json({ ...payload, quota: consumed });
+  } catch (error) {
+    console.error("NOVATEK comparison error:", error);
+    return NextResponse.json({ error: "تعذر إجراء المقارنة حالياً. جرّب مرة ثانية." }, { status: 500 });
   }
+}
+
+async function consumeComparison(service: ReturnType<typeof getServiceClient>, userId: string, used: number, limit: number) {
+  const resetAt = new Date();
+  resetAt.setMonth(resetAt.getMonth() + 1, 1);
+  resetAt.setHours(0, 0, 0, 0);
+  const nextUsed = used + 1;
+  const { error } = await service.from("comparison_usage").upsert({ user_id: userId, comparison_count: nextUsed, free_limit: limit, reset_at: resetAt.toISOString() }, { onConflict: "user_id" });
+  if (error) { console.error("NOVATEK comparison quota error:", error); return null; }
+  return { used: nextUsed, remaining: Math.max(0, limit - nextUsed), limit };
 }

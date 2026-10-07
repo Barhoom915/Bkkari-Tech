@@ -53,7 +53,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
 
   return <><Header /><main className="compare-store-page" dir="rtl">
     <div className="section-breadcrumb"><Link href="/">الرئيسية</Link><span>»</span><Link href="/laptops">اللابتوبات</Link><span>»</span><strong>المقارنة</strong></div>
-    <section className="compare-head"><div><span>SMART COMPARISON</span><h1>مين الأفضل؟</h1><p>هلق المقارنة ما عادت مجرد جدول مواصفات: رح تشوف الفرق، مين متفوق بكل نقطة، وشو الاستخدام الأنسب لكل جهاز.</p></div><Link href="/laptops">اختيار أجهزة ثانية ←</Link></section>
+    <section className="compare-head"><div><span>⚖️ مقارنة ذكية</span><h1>مين الأفضل؟</h1><p>هلق المقارنة ما عادت مجرد جدول مواصفات: رح تشوف الفرق، مين متفوق بكل نقطة، وشو الاستخدام الأنسب لكل جهاز.</p></div><Link href="/laptops">اختيار أجهزة ثانية ←</Link></section>
     {laptops.length ? <>
       <section className="compare-winner-panel">
         <div><span>🏆 الأفضل إجمالاً</span><h2>{bestPerformance?.name}</h2><p>{bestPerformance ? `أعلى نتيجة أداء بين الأجهزة المختارة (${performanceScore(bestPerformance)} نقطة تقريبية).` : ""}</p></div>
@@ -68,7 +68,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         </article>)}
       </section>
       <section className="compare-difference"><div className="compare-section-label">الفرق بالتفصيل</div><h2>وين كل جهاز بيتفوّق؟</h2><div className="compare-difference-list">{dimensions.map(d => { const winner = winnerFor(d, laptops); return <article key={d.key}><span>{d.label}</span><div><b>الأفضل: {winner?.name}</b><p>{winner ? d.explain(winner) : ""}</p></div></article>; })}</div></section>
-      <section className="compare-final"><span>الخلاصة</span><h2>{bestPerformance?.name} هو الأقوى إجمالاً، لكن مو بالضرورة هو الأفضل لكل شخص.</h2><p>إذا أولويتك الألعاب والتصميم، ركّز على كرت الشاشة والمعالج. للعمل والدراسة، الرام والتخزين والبطارية قد تكون أهم. لذلك النتيجة النهائية تعتمد على استخدامك وسعرك المستهدف.</p></section>
+      <section className="compare-final"><span>الخلاصة 🏆</span><h2>{bestPerformance?.name} هو الأقوى إجمالاً، لكن مو بالضرورة هو الأفضل لكل شخص.</h2><p>إذا أولويتك الألعاب والتصميم، ركّز على كرت الشاشة والمعالج. للعمل والدراسة، الرام والتخزين والبطارية قد تكون أهم. لذلك النتيجة النهائية تعتمد على استخدامك وسعرك المستهدف.</p></section>
     </> : <div className="unified-empty">اختار جهازين من صفحة اللابتوبات حتى نخبرك أيهم الأفضل ونوضح الفرق بينهم.</div>}
   </main><Footer /></>;
 }

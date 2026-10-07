@@ -20,8 +20,9 @@ export async function POST(request: Request) {
 
     const reply = await askGemini(last + context, messages.slice(0, -1));
     if (reply) return NextResponse.json({ reply });
-    return NextResponse.json({ reply: "مساعد NOVATEK مو متاح حالياً. تأكد من إعداد GEMINI_API_KEY وجرب مرة ثانية." });
-  } catch {
-    return NextResponse.json({ reply: "صار خطأ بسيط بالمساعد. جرّب مرة ثانية." });
+    return NextResponse.json({ reply: "المساعد الذكي مشغول حالياً 🤖 جرّب بعد شوي." });
+  } catch (error) {
+    console.error("NOVATEK AI chat error:", error);
+    return NextResponse.json({ reply: "المساعد الذكي مشغول حالياً 🤖 جرّب بعد شوي." });
   }
 }

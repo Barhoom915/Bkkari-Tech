@@ -62,7 +62,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
         </div>
       )}
       <button className="ai-chat-fab" onClick={() => setOpen((v) => !v)} aria-label="محادثة مع الذكاء الاصطناعي">
-        <span>✦</span><b>AI</b>
+        <span>🤖</span>
       </button>
     </>
   );
