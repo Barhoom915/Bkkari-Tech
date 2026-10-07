@@ -57,19 +57,145 @@ export default function CompareAnotherLaptop({ current }: { current: Laptop }) {
     {icon:"🔋",label:"البطارية",a:batteryText(current,research),b:batteryText(other!,research),sa:batteryScore(current.battery_health),sb:batteryScore(other?.battery_health),why:"حالة البطارية تعطي فكرة عن صحتها، أما ساعات الاستخدام فتختلف حسب السطوع والألعاب والبرامج."},
     {icon:"💰",label:"السعر",a:`$${Number(current.price||0).toFixed(0)}`,b:`$${Number(other?.price||0).toFixed(0)}`,sa:Number(other?.price||0)>Number(current.price||0)?1:2,sb:Number(current.price||0)>Number(other?.price||0)?1:2,why:"الأفضل سعراً ليس بالضرورة الأقوى؛ لذلك نربط السعر بالأداء والاستخدام المطلوب."},
   ]:[];
-  return <>{<button type="button" onClick={()=>setOpen(true)} className="compare-another-btn">⚖️ مقارنة مع جهاز آخر</button>}{open&&<div className="compare-question-overlay" dir="rtl"><div className={`compare-question-modal compare-new-modal ${result?.winnerId?"compare-rich-result-modal":""}`}><button className="compare-close" onClick={close}>×</button>{result?.winnerId?<div className="compare-result compare-result-final">
-    <div className="compare-winner-glow">🏆</div><h3>النتيجة المناسبة إلك</h3><h2>{winner.name}</h2><strong>{result.winnerScore}/100</strong>
-    <p className="compare-main-reason">{result.reason||`اخترنا ${winner.name} لأنه الأنسب لتفضيلاتك الحالية.`}</p>
-    <p className="compare-quota-note">بقي معك {result.quota?.remaining ?? 0} من 10 مقارنات هالشهر.</p>
-    <div className="compare-device-pair">{comparison.map(l=><article key={l.id} className={l.id===winner.id?"is-winner":""}><img src={l.images?.[0]} alt={l.name}/><span>{l.brand||"NOVATEK"}</span><h3>{l.name}</h3><b>${Number(l.price||0).toFixed(0)}</b>{l.id===winner.id&&<em>✓ الفائز</em>}</article>)}</div>
-    <section className="compare-rich-summary"><h3>ليش {winner.name} هو الأفضل إلك؟</h3><p>{winner.name} تفوّق لأن عنده أفضلية أوضح في النقاط المرتبطة باستخدامك. مو بس الرقم النهائي: تحت رح تشوف شو الفرق بكل قطعة وليش بتفرق.</p>{result.warnings?.length>0&&<div className="compare-warnings">⚠️ {result.warnings.join(" • ")}</div>}</section>
-    <section className="compare-spec-table"><h3>المواصفات كاملة</h3><div className="compare-spec-head"><span>المواصفة</span><b>{current.name}</b><b>{other?.name}</b></div>{[
-      ["الماركة",current.brand||"غير مذكور",other?.brand||"غير مذكور"],["الموديل",current.model||"غير مذكور",other?.model||"غير مذكور"],["المعالج",current.cpu||"غير مذكور",other?.cpu||"غير مذكور"],["كرت الشاشة",current.gpu||"غير مذكور",other?.gpu||"غير مذكور"],["الرام",current.ram||"غير مذكور",other?.ram||"غير مذكور"],["التخزين",current.storage||"غير مذكور",other?.storage||"غير مذكور"],["الشاشة",[current.screen_size,current.screen_resolution].filter(Boolean).join(" • ")||"غير مذكور",[other?.screen_size,other?.screen_resolution].filter(Boolean).join(" • ")||"غير مذكور"],["حالة البطارية",current.battery_health||"غير مذكورة",other?.battery_health||"غير مذكورة"],["السعر",`$${Number(current.price||0).toFixed(0)}`,`$${Number(other?.price||0).toFixed(0)}`]
-    ].map(([label,a,b])=><div className="compare-spec-row" key={String(label)}><span>{label}</span><b>{a}</b><b>{b}</b></div>)}</div></section>
-    <section className="compare-breakdown"><h3>بشو أحسن؟ وليش؟</h3>{rows.map(r=>{const win=r.sa===r.sb?"متقارب":r.sa>r.sb?current.name:other?.name;return <article key={r.label}><div className="compare-breakdown-title"><span>{r.icon} {r.label}</span><strong>{win}</strong></div><div className="compare-breakdown-values"><div className={r.sa>r.sb?"better":""}><b>{current.name}</b><span>{r.a}</span></div><div className={r.sb>r.sa?"better":""}><b>{other?.name}</b><span>{r.b}</span></div></div><p><b>ليش بتفرق؟</b> {r.why}</p>{r.label==="البطارية"&&<p><b>مدة الاستخدام:</b> {batteryText(winner,research)}</p>}</article>})}</section>
-    <section className="compare-use-cards"><h3>مين أنسب لكل استخدام؟</h3><div><article><b>🎮 الألعاب</b><p>{gpuScore(current.gpu)>=gpuScore(other?.gpu)?current.name:other?.name} — بسبب كرت الشاشة الأقوى، وهو العامل الأهم بأداء الألعاب.</p></article><article><b>💻 البرمجة والعمل</b><p>{cpuScore(current.cpu)+ramScore(current.ram)>=cpuScore(other?.cpu)+ramScore(other?.ram)?current.name:other?.name} — بسبب مزيج المعالج والرام الأفضل لتعدد المهام.</p></article><article><b>🎨 التصميم والمونتاج</b><p>{gpuScore(current.gpu)+screenScore(current)>=gpuScore(other?.gpu)+screenScore(other!)?current.name:other?.name} — كرت الشاشة والشاشة أهم نقطتين هون.</p></article><article><b>🔋 التنقل</b><p>{batteryScore(current.battery_health)>=batteryScore(other?.battery_health)?current.name:other?.name} — بناءً على حالة البطارية المسجلة؛ ساعات الاستخدام الفعلية تعتمد على الاستخدام.</p></article></div></section>
-    <section className="compare-final-verdict"><span>🏆 الحكم النهائي</span><h3>{winner.name} أفضل إلك، والسبب مو بس لأنه أخذ {result.winnerScore}/100.</h3><p>{result.reason||"لأنه حقق تطابقاً أفضل مع أولوياتك."} أما {loser?.name} فممكن يكون أفضل إذا تغيّرت أولويتك نحو نقطة يتفوق فيها.</p></section>
-    {research.length>0&&<section className="compare-sources"><h3>🔎 معلومات خارجية استخدمناها</h3>{research.map((r,i)=><div key={i}><b>{r.query}</b><p>{r.summary?.slice(0,700)}</p>{r.sources?.slice(0,4).map((s,j)=><a key={j} href={s.url||"#"} target="_blank" rel="noreferrer">{s.title} ↗</a>)}</div>)}</section>}
-    <div className="compare-result-actions"><Link href={`/compare?ids=${current.id},${other?.id}`} className="compare-full-link">فتح المقارنة الكاملة ←</Link><button type="button" className="compare-restart" onClick={()=>{setResult(null);setStep(0);}}>مقارنة ثانية</button></div>
-  </div>:step===0?<><span>⚖️ مقارنة ذكية</span><h2>اختار الجهاز الثاني</h2><p>ابحث بالاسم أو الماركة بالعربي أو الإنكليزي، مثل: آبل، ابل، Apple، أسوس، ASUS.</p><div className="compare-search-box"><span>🔎</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="ابحث عن جهاز أو ماركة..." autoFocus/></div><div className="compare-second-grid">{filtered.slice(0,30).map(l=><button type="button" key={l.id} className={`compare-second-card ${other?.id===l.id?"selected":""}`} onClick={()=>setOther(l)}><img src={l.images?.[0]} alt={l.name}/><span>{l.brand}</span><b>{l.name}</b><strong>${l.price}</strong></button>)}</div><div className="compare-question-actions"><button type="button" onClick={close}>إلغاء</button><button type="button" disabled={!other} onClick={()=>setStep(1)}>التالي ←</button></div></>:<><span>السؤال {step}/{questions.length}</span><h2>{questions[step-1][1]}</h2><p>اختياراتك هي اللي بتحدد وزن كل نقطة بالنتيجة.</p><div className="compare-options">{questions[step-1][2].map(v=>{const key=questions[step-1][0] as keyof Pref;const c=(pref as any)[key];const active=Array.isArray(c)?c.includes(v):c===v;return <button key={v} type="button" className={active?"active":""} onClick={()=>choose(key,v,questions[step-1][3])}>{v}</button>})}</div>{message&&<div className="compare-error">⚠️ {message}</div>}<div className="compare-question-actions"><button type="button" onClick={()=>setStep(step-1)}>رجوع</button>{step<questions.length?<button type="button" onClick={()=>setStep(step+1)}>التالي ←</button>:<button type="button" disabled={busy} onClick={run}>{busy?"عم حلل الجهازين…":"🏆 جاهز للمقارنة"}</button>}</div><p className="compare-quota-note">رصيدك: {quota?.remaining ?? 10} من 10 مقارنات هالشهر.</p></>}</div></div>}</>;
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="compare-another-btn">⚖️ مقارنة مع جهاز آخر</button>
+      {open && (
+        <div className="compare-question-overlay" dir="rtl">
+          <div className={`compare-question-modal compare-new-modal ${result?.winnerId ? "compare-rich-result-modal" : ""}`}>
+            <button className="compare-close" onClick={close}>×</button>
+            {result?.winnerId ? (
+              <div className="compare-result compare-result-final">
+                <div className="compare-winner-glow">🏆</div>
+                <h3>النتيجة المناسبة إلك</h3>
+                <h2>{winner.name}</h2>
+                <strong>{result.winnerScore}/100</strong>
+                <p className="compare-main-reason">{result.reason || `اخترنا ${winner.name} لأنه الأنسب لتفضيلاتك الحالية.`}</p>
+                <p className="compare-quota-note">بقي معك {result.quota?.remaining ?? 0} من 10 مقارنات هالشهر.</p>
+
+                <div className="compare-device-pair">
+                  {comparison.map(l => (
+                    <article key={l.id} className={l.id === winner.id ? "is-winner" : ""}>
+                      <img src={l.images?.[0]} alt={l.name} />
+                      <span>{l.brand || "NOVATEK"}</span>
+                      <h3>{l.name}</h3>
+                      <b>${Number(l.price || 0).toFixed(0)}</b>
+                      {l.id === winner.id && <em>✓ الفائز</em>}
+                    </article>
+                  ))}
+                </div>
+
+                <section className="compare-rich-summary">
+                  <h3>ليش {winner.name} هو الأفضل إلك؟</h3>
+                  <p>{winner.name} تفوّق لأن عنده أفضلية أوضح في النقاط المرتبطة باستخدامك. مو بس الرقم النهائي: تحت رح تشوف شو الفرق بكل قطعة وليش بتفرق.</p>
+                  {result.warnings?.length > 0 && <div className="compare-warnings">⚠️ {result.warnings.join(" • ")}</div>}
+                </section>
+
+                <section className="compare-spec-table">
+                  <h3>المواصفات كاملة</h3>
+                  <div className="compare-spec-head"><span>المواصفة</span><b>{current.name}</b><b>{other?.name}</b></div>
+                  {[
+                    ["الماركة", current.brand || "غير مذكور", other?.brand || "غير مذكور"],
+                    ["الموديل", current.model || "غير مذكور", other?.model || "غير مذكور"],
+                    ["المعالج", current.cpu || "غير مذكور", other?.cpu || "غير مذكور"],
+                    ["كرت الشاشة", current.gpu || "غير مذكور", other?.gpu || "غير مذكور"],
+                    ["الرام", current.ram || "غير مذكور", other?.ram || "غير مذكور"],
+                    ["التخزين", current.storage || "غير مذكور", other?.storage || "غير مذكور"],
+                    ["الشاشة", [current.screen_size, current.screen_resolution].filter(Boolean).join(" • ") || "غير مذكور", [other?.screen_size, other?.screen_resolution].filter(Boolean).join(" • ") || "غير مذكور"],
+                    ["حالة البطارية", current.battery_health || "غير مذكورة", other?.battery_health || "غير مذكورة"],
+                    ["السعر", `$${Number(current.price || 0).toFixed(0)}`, `$${Number(other?.price || 0).toFixed(0)}`]
+                  ].map(([label, a, b]) => (
+                    <div className="compare-spec-row" key={String(label)}><span>{label}</span><b>{a}</b><b>{b}</b></div>
+                  ))}
+                </section>
+
+                <section className="compare-breakdown">
+                  <h3>بشو أحسن؟ وليش؟</h3>
+                  {rows.map(r => {
+                    const win = r.sa === r.sb ? "متقارب" : r.sa > r.sb ? current.name : other?.name;
+                    return (
+                      <article key={r.label}>
+                        <div className="compare-breakdown-title"><span>{r.icon} {r.label}</span><strong>{win}</strong></div>
+                        <div className="compare-breakdown-values">
+                          <div className={r.sa > r.sb ? "better" : ""}><b>{current.name}</b><span>{r.a}</span></div>
+                          <div className={r.sb > r.sa ? "better" : ""}><b>{other?.name}</b><span>{r.b}</span></div>
+                        </div>
+                        <p><b>ليش بتفرق؟</b> {r.why}</p>
+                        {r.label === "البطارية" && <p><b>مدة الاستخدام:</b> {batteryText(winner, research)}</p>}
+                      </article>
+                    );
+                  })}
+                </section>
+
+                <section className="compare-use-cards">
+                  <h3>مين أنسب لكل استخدام؟</h3>
+                  <div>
+                    <article><b>🎮 الألعاب</b><p>{gpuScore(current.gpu) >= gpuScore(other?.gpu) ? current.name : other?.name} — بسبب كرت الشاشة الأقوى، وهو العامل الأهم بأداء الألعاب.</p></article>
+                    <article><b>💻 البرمجة والعمل</b><p>{cpuScore(current.cpu) + ramScore(current.ram) >= cpuScore(other?.cpu) + ramScore(other?.ram) ? current.name : other?.name} — بسبب مزيج المعالج والرام الأفضل لتعدد المهام.</p></article>
+                    <article><b>🎨 التصميم والمونتاج</b><p>{gpuScore(current.gpu) + screenScore(current) >= gpuScore(other?.gpu) + screenScore(other!) ? current.name : other?.name} — كرت الشاشة والشاشة أهم نقطتين هون.</p></article>
+                    <article><b>🔋 التنقل</b><p>{batteryScore(current.battery_health) >= batteryScore(other?.battery_health) ? current.name : other?.name} — بناءً على حالة البطارية المسجلة؛ ساعات الاستخدام الفعلية تعتمد على الاستخدام.</p></article>
+                  </div>
+                </section>
+
+                <section className="compare-final-verdict">
+                  <span>🏆 الحكم النهائي</span>
+                  <h3>{winner.name} أفضل إلك، والسبب مو بس لأنه أخذ {result.winnerScore}/100.</h3>
+                  <p>{result.reason || "لأنه حقق تطابقاً أفضل مع أولوياتك."} أما {loser?.name} فممكن يكون أفضل إذا تغيّرت أولويتك نحو نقطة يتفوق فيها.</p>
+                </section>
+
+                {research.length > 0 && (
+                  <section className="compare-sources">
+                    <h3>🔎 معلومات خارجية استخدمناها</h3>
+                    {research.map((r, i) => (
+                      <div key={i}>
+                        <b>{r.query}</b>
+                        <p>{r.summary?.slice(0, 700)}</p>
+                        {r.sources?.slice(0, 4).map((src, j) => <a key={j} href={src.url || "#"} target="_blank" rel="noreferrer">{src.title} ↗</a>)}
+                      </div>
+                    ))}
+                  </section>
+                )}
+
+                <div className="compare-result-actions">
+                  <Link href={`/compare?ids=${current.id},${other?.id}`} className="compare-full-link">فتح المقارنة الكاملة ←</Link>
+                  <button type="button" className="compare-restart" onClick={() => { setResult(null); setStep(0); }}>مقارنة ثانية</button>
+                </div>
+              </div>
+            ) : step === 0 ? (
+              <>
+                <span>⚖️ مقارنة ذكية</span>
+                <h2>اختار الجهاز الثاني</h2>
+                <p>ابحث بالاسم أو الماركة بالعربي أو الإنكليزي، مثل: آبل، ابل، Apple، أسوس، ASUS.</p>
+                <div className="compare-search-box"><span>🔎</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="ابحث عن جهاز أو ماركة..." autoFocus /></div>
+                <div className="compare-second-grid">
+                  {filtered.slice(0, 30).map(l => <button type="button" key={l.id} className={`compare-second-card ${other?.id === l.id ? "selected" : ""}`} onClick={() => setOther(l)}><img src={l.images?.[0]} alt={l.name} /><span>{l.brand}</span><b>{l.name}</b><strong>${l.price}</strong></button>)}
+                </div>
+                <div className="compare-question-actions"><button type="button" onClick={close}>إلغاء</button><button type="button" disabled={!other} onClick={() => setStep(1)}>التالي ←</button></div>
+              </>
+            ) : (
+              <>
+                <span>السؤال {step}/{questions.length}</span>
+                <h2>{questions[step - 1][1]}</h2>
+                <p>اختياراتك هي اللي بتحدد وزن كل نقطة بالنتيجة.</p>
+                <div className="compare-options">
+                  {questions[step - 1][2].map(v => {
+                    const key = questions[step - 1][0] as keyof Pref;
+                    const c = (pref as any)[key];
+                    const active = Array.isArray(c) ? c.includes(v) : c === v;
+                    return <button key={v} type="button" className={active ? "active" : ""} onClick={() => choose(key, v, questions[step - 1][3])}>{v}</button>;
+                  })}
+                </div>
+                {message && <div className="compare-error">⚠️ {message}</div>}
+                <div className="compare-question-actions">
+                  <button type="button" onClick={() => setStep(step - 1)}>رجوع</button>
+                  {step < questions.length ? <button type="button" onClick={() => setStep(step + 1)}>التالي ←</button> : <button type="button" disabled={busy} onClick={run}>{busy ? "عم حلل الجهازين…" : "🏆 جاهز للمقارنة"}</button>}
+                </div>
+                <p className="compare-quota-note">رصيدك: {quota?.remaining ?? 10} من 10 مقارنات هالشهر.</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
