@@ -1,4 +1,4 @@
-import { supabase } from "@/app/lib/supabase";
+import { createClient as createServerClient } from "@/app/lib/supabase-server";
 import type { Laptop } from "@/app/lib/types";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
@@ -11,6 +11,7 @@ import { getSiteSetting } from "@/app/lib/site-settings";
 export const dynamic = "force-dynamic";
 export const revalidate = 30;
 async function getLaptops(): Promise<Laptop[]> {
+  const supabase = await createServerClient();
   const { data, error } = await supabase.from("laptops").select("*").eq("is_available", true).order("created_at", { ascending: false });
   if (error) { console.error(error.message); return []; }
   return data ?? [];

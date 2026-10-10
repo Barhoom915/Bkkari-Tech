@@ -1,8 +1,10 @@
+import "server-only";
 import { unstable_cache } from "next/cache";
-import { supabase } from "./supabase";
+import { getServiceClient } from "./supabase-server";
 
 const getSiteSettingCached = unstable_cache(
   async (key: string, fallback: unknown) => {
+    const supabase = getServiceClient();
     const { data, error } = await supabase.from("site_settings").select("value").eq("key", key).maybeSingle();
     if (error || !data?.value) return fallback;
     return data.value;

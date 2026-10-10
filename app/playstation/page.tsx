@@ -1,13 +1,14 @@
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import PlaystationCatalog from "../components/PlaystationCatalog";
-import { supabase } from "../lib/supabase";
+import { createClient as createServerClient } from "../lib/supabase-server";
 import Link from "next/link";
 import { getSiteSetting } from "../lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlaystationPage(){
+ const supabase = await createServerClient();
  const [{data,error}, media] = await Promise.all([
    supabase.from("playstation_products").select("*").eq("is_available",true).order("created_at",{ascending:false}),
    getSiteSetting<any>("storefront_media", {})
