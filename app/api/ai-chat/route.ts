@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       });
     }
 
-    let usage;
+    let usage: Awaited<ReturnType<typeof beginAiUsage>> | null = null;
     try {
       usage = await beginAiUsage(request);
       usageUserId = usage.user?.id ?? null;
