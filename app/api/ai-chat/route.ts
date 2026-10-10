@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { askGemini } from "@/app/lib/intelligence/gemini";
+import { askGeminiWithMetadata } from "@/app/lib/intelligence/gemini";
+import { beginAiUsage, recordAiUsage } from "@/app/lib/intelligence/usage-ledger";
 import { researchLaptop } from "@/app/lib/intelligence/providers";
 import { readCache, writeCache } from "@/app/lib/intelligence/cache";
 
@@ -44,6 +45,10 @@ function wantsPriceSearch(text: string): boolean {
 }
 
 export async function POST(request: Request) {
+  const usageStartedAt = Date.now();
+  let usageUserId: string | null = null;
+  let usageProvider = "fallback_chain";
+  let usageModel: string | null = null;
   try {
     const body = await request.json();
     const messages = Array.isArray(body?.messages) ? body.messages : [];
@@ -54,6 +59,29 @@ export async function POST(request: Request) {
     if (!last) {
       return NextResponse.json({
         reply: "اكتب سؤالك أولاً."
+      });
+    }
+
+    let usage;
+    try {
+      usage = await beginAiUsage(request);
+      usageUserId = usage.user?.id ?? null;
+    } catch (error) {
+      console.error("NOVATEK AI quota check failed:", error instanceof Error ? error.message : "unknown");
+      return NextResponse.json({ reply: "المساعد الذكي غير متاح مؤقتاً بسبب تعذر التحقق من حدود الاستخدام. جرّب لاحقاً." }, { status: 503 });
+    }
+
+    if (!usage.quota.allowed) {
+      const reason = usage.quota.reason || "rate_limited";
+      await recordAiUsage({ userId: usageUserId, provider: "quota_guard", status: "failed", latencyMs: Date.now() - usageStartedAt, errorCode: reason });
+      const message = reason === "daily_limit"
+        ? "وصلت للحد اليومي المجاني للمساعد الذكي. جرّب بكرا."
+        : reason === "monthly_limit"
+          ? "وصلت للحد الشهري المجاني للمساعد الذكي."
+          : "عم تبعت طلبات بسرعة كبيرة. انتظر شوي وجرب مرة ثانية.";
+      return NextResponse.json({ reply: message, usage: usage.quota }, {
+        status: 429,
+        headers: { "Retry-After": reason === "rate_limited" ? "60" : "3600", "Cache-Control": "no-store" }
       });
     }
 
@@ -178,14 +206,16 @@ ${sources
      * محرك الذكاء الاصطناعي متعدد المزودين.
      * البحث الخارجي مجرد Context إضافي.
      */
-    const reply = await askGemini(
-      last + context,
-      history
-    );
+    const result = await askGeminiWithMetadata(last + context, history);
 
-    if (reply) {
-      return NextResponse.json({ reply });
+    if (result?.reply) {
+      usageProvider = result.provider;
+      usageModel = result.model;
+      await recordAiUsage({ userId: usageUserId, provider: usageProvider, model: usageModel, status: "success", latencyMs: Date.now() - usageStartedAt });
+      return NextResponse.json({ reply: result.reply, usage: usage?.quota }, { headers: { "Cache-Control": "no-store" } });
     }
+
+    await recordAiUsage({ userId: usageUserId, provider: "fallback_chain", status: "failed", latencyMs: Date.now() - usageStartedAt, errorCode: "all_providers_unavailable" });
 
     return NextResponse.json(
       {
@@ -195,6 +225,7 @@ ${sources
       { status: 503 }
     );
   } catch (error) {
+    await recordAiUsage({ userId: usageUserId, provider: usageProvider, model: usageModel, status: "failed", latencyMs: Date.now() - usageStartedAt, errorCode: "route_error" });
     console.error(
       "NOVATEK V98.24 AI chat error:",
       error instanceof Error ? error.message : "unknown error"
