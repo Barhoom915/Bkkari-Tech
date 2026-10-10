@@ -11,7 +11,7 @@ export async function GET() {
   if (auth.user) {
     const service = getServiceClient();
     const { data: aiRow } = await service.from("ai_usage_limits")
-      .select("day_key,month_key,daily_count,monthly_count,minute_count,updated_at")
+      .select("day_key,month_key,daily_count,monthly_count,minute_count,minute_started_at,updated_at")
       .eq("actor_key", `user:${auth.user.id}`)
       .maybeSingle();
     const today = new Date().toISOString().slice(0, 10);
@@ -21,7 +21,7 @@ export async function GET() {
       dailyLimit: 30,
       monthlyUsed: aiRow?.month_key === thisMonth ? Number(aiRow.monthly_count ?? 0) : 0,
       monthlyLimit: 300,
-      minuteUsed: aiRow && Date.now() - new Date(aiRow.updated_at).getTime() < 60_000 ? Number(aiRow.minute_count ?? 0) : 0,
+      minuteUsed: aiRow && Date.now() - new Date(aiRow.minute_started_at).getTime() < 60_000 ? Number(aiRow.minute_count ?? 0) : 0,
       minuteLimit: 6,
       updatedAt: aiRow?.updated_at ?? null,
     };
