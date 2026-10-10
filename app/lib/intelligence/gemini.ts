@@ -360,47 +360,37 @@ async function askGeminiProvider(
   }
 }
 
-export async function askGemini(
+export type AIProviderResult = { reply: string; provider: string; model: string | null };
+
+export async function askGeminiWithMetadata(
   input: string,
   history: ChatMessage[] = []
-): Promise<string | null> {
+): Promise<AIProviderResult | null> {
   const providers = [
-    {
-      name: "Ashna",
-      fn: () => askAshna(input, history),
-    },
-    {
-      name: "Groq",
-      fn: () => askGroq(input, history),
-    },
-    {
-      name: "OpenRouter",
-      fn: () => askOpenRouter(input, history),
-    },
-    {
-      name: "Gemini",
-      fn: () => askGeminiProvider(input, history),
-    },
+    { name: "Ashna", model: process.env.ASHNA_MODEL || "gpt-4o-mini", fn: () => askAshna(input, history) },
+    { name: "Groq", model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", fn: () => askGroq(input, history) },
+    { name: "OpenRouter", model: process.env.OPENROUTER_MODEL || "openrouter/free", fn: () => askOpenRouter(input, history) },
+    { name: "Gemini", model: process.env.GEMINI_MODEL || "gemini-3.8-flash", fn: () => askGeminiProvider(input, history) },
   ];
 
   for (const provider of providers) {
     try {
       const reply = await provider.fn();
-
       if (reply) {
-        console.log(
-          `NOVATEK AI provider: ${provider.name}`
-        );
-
-        return reply;
+        console.log(`NOVATEK AI provider: ${provider.name}`);
+        return { reply, provider: provider.name.toLowerCase(), model: provider.model };
       }
     } catch (error) {
-      console.error(
-        `NOVATEK ${provider.name} provider failed:`,
-        getErrorBody(error)
-      );
+      console.error(`NOVATEK ${provider.name} provider failed:`, getErrorBody(error));
     }
   }
-
   return null;
+}
+
+export async function askGemini(
+  input: string,
+  history: ChatMessage[] = []
+): Promise<string | null> {
+  const result = await askGeminiWithMetadata(input, history);
+  return result?.reply ?? null;
 }
