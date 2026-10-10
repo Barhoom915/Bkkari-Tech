@@ -7,6 +7,7 @@ import SearchResults from "./SearchResults";
 export const dynamic = "force-dynamic";
 export default async function SearchPage({searchParams}:{searchParams:Promise<{q?:string}>}) {
   const {q=""}=await searchParams;
+  const supabase = await createServerClient();
   const [{data:laptops}, {data:playstation}, digital] = await Promise.all([
     supabase.from("laptops").select("*").eq("is_available",true).order("created_at",{ascending:false}),
     supabase.from("playstation_products").select("*").eq("is_available",true).order("created_at",{ascending:false}),
