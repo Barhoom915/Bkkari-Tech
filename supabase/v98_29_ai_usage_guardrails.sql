@@ -83,10 +83,8 @@ grant execute on function public.consume_ai_usage_quota(text, uuid, integer, int
 do $$
 begin
   if to_regclass('public.ai_usage_events') is not null then
-    create index if not exists ai_usage_events_feature_status_created_idx
-      on public.ai_usage_events(feature, status, created_at desc);
-    create index if not exists ai_usage_events_user_feature_created_idx
-      on public.ai_usage_events(user_id, feature, created_at desc);
+    execute 'create index if not exists ai_usage_events_feature_status_created_idx on public.ai_usage_events(feature, status, created_at desc)';
+    execute 'create index if not exists ai_usage_events_user_feature_created_idx on public.ai_usage_events(user_id, feature, created_at desc)';
   end if;
 end $$;
 notify pgrst, 'reload schema';
