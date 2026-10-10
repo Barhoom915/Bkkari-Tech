@@ -1,10 +1,10 @@
 import "server-only";
 
-const BASE_URL = "https://api.syrimarket.com/client/api/v1";
+const BASE_URL = (process.env.SYRIMARKET_API_URL?.trim() || "https://api.syrimarket.com/client/api/v1").replace(/\/$/, "");
 
 function getToken() {
-  const token = process.env.SYRIMARKET_API_TOKEN?.trim();
-  if (!token) throw new Error("SYRIMARKET_API_TOKEN is not configured");
+  const token = process.env.SYRIMARKET_API_TOKEN?.trim() || process.env.SYRIMARKET_API_KEY?.trim();
+  if (!token) throw new Error("SYRIMARKET_API_TOKEN or SYRIMARKET_API_KEY is not configured");
   return token;
 }
 
@@ -21,10 +21,12 @@ export class SyriaMarketApiError extends Error {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase();
+  const token = getToken();
   const response = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${getToken()}`,
+      Authorization: `Bearer ${token}`,
+      "api-token": token,
       Accept: "application/json",
       ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...(init.headers ?? {}),
