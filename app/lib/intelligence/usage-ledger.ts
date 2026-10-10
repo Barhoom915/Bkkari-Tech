@@ -37,6 +37,8 @@ export async function beginAiUsage(request: Request) {
 
 export async function recordAiUsage(input: {
   userId: string | null;
+  feature?: string;
+  comparedProductIds?: number[];
   provider: string;
   model?: string | null;
   status: "success" | "failed" | "cached";
@@ -47,7 +49,7 @@ export async function recordAiUsage(input: {
     const db = getServiceClient();
     const { error } = await db.from("ai_usage_events").insert({
       user_id: input.userId,
-      feature: "ai_chat",
+      feature: input.feature ?? "ai_chat",
       provider: input.provider,
       model: input.model ?? null,
       status: input.status,
@@ -57,7 +59,7 @@ export async function recordAiUsage(input: {
       total_tokens: null,
       cost_usd: null,
       cost_is_estimate: false,
-      compared_product_ids: [],
+      compared_product_ids: input.comparedProductIds ?? [],
       error_code: input.errorCode ?? null,
     });
     if (error) console.error("NOVATEK AI usage ledger insert failed:", error.message);
