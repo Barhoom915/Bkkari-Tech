@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/app/lib/supabase";
 import { createClient as createServerClient, getServiceClient } from "@/app/lib/supabase-server";
 import { askGeminiWithMetadata } from "@/app/lib/intelligence/gemini";
 import { beginAiUsage, recordAiUsage } from "@/app/lib/intelligence/usage-ledger";
@@ -49,7 +48,7 @@ export async function POST(request: Request) {
     const preferences = body.preferences as ComparisonPreferences;
     if (ids.length !== 2) return NextResponse.json({ error: "اختار جهازين بالضبط." }, { status: 400 });
 
-    const { data, error } = await supabase.from("laptops").select("*").in("id", ids);
+    const { data, error } = await serverSupabase.from("laptops").select("*").in("id", ids);
     if (error || !data || data.length !== 2) return NextResponse.json({ error: "ما قدرت أجيب الجهازين." }, { status: 400 });
     const laptops = data as Laptop[];
     const cacheKey = `comparison:${ids.sort((a: number, b: number) => a - b).join("-")}:${JSON.stringify(preferences)}`;
