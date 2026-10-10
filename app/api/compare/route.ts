@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     const localScores = laptops.map(l => ({ id: l.id, score: score(l, preferences) }));
     const prompt = `قارن بين جهازي NOVATEK التاليين حسب تفضيلات المستخدم. لا تفترض أن الأغلى أفضل. استخدم المواصفات المحلية والمعلومات الخارجية. أرجع JSON فقط بالشكل: {"winnerId":number,"winnerScore":number,"reason":"string","categoryScores":[{"label":"string","left":number,"right":number}],"warnings":["string"]}. الأجهزة: ${JSON.stringify(laptops.map(l => ({ id:l.id,name:l.name,brand:l.brand,cpu:l.cpu,gpu:l.gpu,ram:l.ram,storage:l.storage,screen_size:l.screen_size,screen_resolution:l.screen_resolution,battery:l.battery_health,price:l.price })))}. التفضيلات: ${JSON.stringify(preferences)}. التقييم المحلي: ${JSON.stringify(localScores)}. المعلومات الخارجية: ${research.map(r=>({query:r.query,summary:r.summary,sources:r.sources,prices:r.prices})).map((item) => JSON.stringify(item)).join("\n")}`;
     const usageStartedAt = Date.now();
-    let usage;
+    let usage: Awaited<ReturnType<typeof beginAiUsage>>;
     try {
       usage = await beginAiUsage(request);
     } catch (error) {
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     });
     const ai = aiResult?.reply ?? null;
     let result: any = null;
-    try { result = ai ? JSON.parse(ai.replace(/^\x60\x60\x60json\\s*|\\s*\x60\x60\x60$/g, "")) : null; } catch { result = null; }
+    try { result = ai ? JSON.parse(ai.replace(/^```json\s*|\s*```$/g, "")) : null; } catch { result = null; }
     if (!result) {
       const winner = [...localScores].sort((a,b)=>b.score-a.score)[0];
       result = { winnerId: winner.id, winnerScore: winner.score, reason: "النتيجة مبنية على تفضيلاتك ومواصفات الجهازين المتوفرة حالياً.", categoryScores: [], warnings: [] };
