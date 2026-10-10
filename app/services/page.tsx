@@ -63,6 +63,17 @@ export default async function DigitalServicesPage({
           <div><span>NOVATEK / DIGITAL</span><h1>كل الخدمات الرقمية بمكان واحد.</h1><p>اختار القسم، وشوف الخدمات بنفس أسلوب بطاقات اللابتوبات: صورة، اسم، وصف، وعدد الخدمات.</p></div>
         </section>
 
+        <section className="mt-6 rounded-2xl border border-line bg-surface p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="text-xs font-bold tracking-widest text-blue">NEW PROVIDER / SYRIMARKET</span>
+              <h2 className="mt-2 text-xl font-extrabold text-ink">كتالوج SyriMarket</h2>
+              <p className="mt-2 text-sm leading-6 text-ink-soft">تصفّح المنتجات المتاحة من SyriMarket وأسعارها وحالتها. الطلبات عبر هذا المزود ما زالت غير مفعّلة إلى أن يكتمل التحقق من آلية التسعير والطلب.</p>
+            </div>
+            <Link href="/services/syrimarket" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-blue px-5 py-3 text-sm font-bold text-white">عرض منتجات SyriMarket ←</Link>
+          </div>
+        </section>
+
         {error ? (
           <div className="mt-8 rounded-2xl border border-dashed border-line bg-surface p-10 text-center text-sm text-ink-soft">
             {error}
