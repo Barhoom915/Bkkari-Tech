@@ -52,9 +52,16 @@ export function selectCheapestSupplier(
   }
 
   const normalizedCurrency = currency.trim().toUpperCase();
+  const normalizedServiceKey = serviceKey.trim();
+  if (!normalizedCurrency || !normalizedServiceKey) {
+    return { ok: false, reason: "no_eligible_quote", considered: quotes.length, rejected: quotes.length };
+  }
+
   const candidates = quotes.filter((quote) => {
-    if (quote.serviceKey !== serviceKey || !quote.available) return false;
+    if (!quote || quote.serviceKey.trim() !== normalizedServiceKey || !quote.available) return false;
+    if (!quote.provider.trim()) return false;
     if (!Number.isFinite(quote.minQuantity) || !Number.isFinite(quote.maxQuantity)) return false;
+    if (quote.minQuantity < 0 || quote.maxQuantity < quote.minQuantity) return false;
     if (quantity < quote.minQuantity || quantity > quote.maxQuantity) return false;
     if (!Number.isFinite(quote.totalCost) || quote.totalCost < 0) return false;
     if (quote.currency.trim().toUpperCase() !== normalizedCurrency) return false;
