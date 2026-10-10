@@ -9,6 +9,7 @@ export async function GET() {
   let comparison = null;
   let aiChat = null;
   if (auth.user) {
+    const service = getServiceClient();
     const { data: aiRow } = await service.from("ai_usage_limits")
       .select("day_key,month_key,daily_count,monthly_count,minute_count,updated_at")
       .eq("actor_key", `user:${auth.user.id}`)
@@ -24,7 +25,6 @@ export async function GET() {
       minuteLimit: 6,
       updatedAt: aiRow?.updated_at ?? null,
     };
-    const service = getServiceClient();
     const { data: row } = await service.from("comparison_usage").select("comparison_count,reset_at").eq("user_id", auth.user.id).maybeSingle();
     const resetExpired = !row?.reset_at || new Date(row.reset_at).getTime() <= Date.now();
     const used = resetExpired ? 0 : Number(row?.comparison_count ?? 0);
