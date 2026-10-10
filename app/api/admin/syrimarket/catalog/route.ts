@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, getServiceClient } from "@/app/lib/supabase-server";
 import { syriaMarket, SyriaMarketApiError } from "@/app/lib/syrimarket";
+import { inspectCatalogPayload } from "@/app/lib/suppliers/inspect-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,17 @@ export async function GET() {
       syriaMarket.getProducts(),
       syriaMarket.getCategories(0),
     ]);
-    return NextResponse.json({ ok: true, configured: true, provider: "SyriMarket", profile, products, categories });
+    return NextResponse.json({
+      ok: true,
+      configured: true,
+      provider: "SyriMarket",
+      profile,
+      products,
+      categories,
+      // Admin-only structure diagnostics to verify real field paths before normalization.
+      catalogSchema: inspectCatalogPayload(products),
+      categoriesSchema: inspectCatalogPayload(categories),
+    });
   } catch (error) {
     if (error instanceof SyriaMarketApiError) {
       const status = error.status === 401 || error.status === 403 ? 502 : error.status === 429 ? 503 : 502;
