@@ -1,4 +1,4 @@
-import { supabase } from "@/app/lib/supabase";
+import { createClient as createServerClient } from "@/app/lib/supabase-server";
 import { satofill, isSatoFillBlocked, getSatoFillStorePrice, isSatoFillChatProduct } from "@/app/lib/satofill";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
