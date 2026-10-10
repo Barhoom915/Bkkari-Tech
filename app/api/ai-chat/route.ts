@@ -45,11 +45,21 @@ function wantsPriceSearch(text: string): boolean {
 
 export async function POST(request: Request) {
   try {
+    // V98.33: bound request size and conversation history before calling any AI provider.
+    const contentLength = Number(request.headers.get("content-length") || 0);
+    if (contentLength > 64 * 1024) {
+      return NextResponse.json({ reply: "الرسالة طويلة كتير. اختصرها وجرب مرة تانية." }, { status: 413 });
+    }
+
     const body = await request.json();
-    const messages = Array.isArray(body?.messages) ? body.messages : [];
+    const messages = Array.isArray(body?.messages) ? body.messages.slice(-13) : [];
+    const incomingChars = messages.reduce((sum: number, message: any) => sum + getMessageText(message).length, 0);
+    if (incomingChars > 24000) {
+      return NextResponse.json({ reply: "المحادثة طويلة كتير. افتح محادثة جديدة أو اختصر الرسائل." }, { status: 413 });
+    }
 
     const lastMessage = messages[messages.length - 1];
-    const last = getMessageText(lastMessage);
+    const last = getMessageText(lastMessage).slice(0, 6000);
 
     if (!last) {
       return NextResponse.json({
