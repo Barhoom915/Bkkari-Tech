@@ -1,23 +1,15 @@
 import { notFound } from "next/navigation";
-import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import PlaystationProductActions from "./ProductActions";
-import { supabase } from "@/app/lib/supabase";
-
-const getPlaystationProductCached = unstable_cache(
-  async (id: string) => {
-    const { data, error } = await supabase.from("playstation_products").select("*").eq("id", id).maybeSingle();
-    return error || !data ? null : data;
-  },
-  ["novatek-playstation-detail"],
-  { revalidate: 30 }
-);
+import { createClient as createServerClient } from "@/app/lib/supabase-server";
 
 export default async function PlaystationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const data = await getPlaystationProductCached(id);
+  const supabase = await createServerClient();
+  const { data, error } = await supabase.from("playstation_products").select("*").eq("id", id).maybeSingle();
+  if (error) console.error("PlayStation product query failed:", error.message);
   if (!data) notFound();
   const p = data as any;
   const isController = p.product_type === "controller"; const isAccessory = p.product_type === "accessory";
