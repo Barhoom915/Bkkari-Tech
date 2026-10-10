@@ -38,14 +38,14 @@ export async function GET() {
         total: Number(serpapi.searches_per_month ?? 0),
         renewal: serpapi.plan_renewal_date ?? null,
       } : null,
-      comparison,
-      aiChat,
+    },
+    comparison,
+    aiChat,
     configured: {
-        serpapi: Boolean(process.env.SERPAPI_KEY),
-        pricesapi: Boolean(process.env.PRICESAPI_KEY),
-        tavily: Boolean(process.env.TAVILY_API_KEY),
-        gemini: Boolean(process.env.GEMINI_API_KEY),
-      },
+      serpapi: Boolean(process.env.SERPAPI_KEY),
+      pricesapi: Boolean(process.env.PRICESAPI_KEY),
+      tavily: Boolean(process.env.TAVILY_API_KEY),
+      gemini: Boolean(process.env.GEMINI_API_KEY),
     },
   });
 }
