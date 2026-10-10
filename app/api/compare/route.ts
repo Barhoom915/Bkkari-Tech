@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/app/lib/supabase";
 import { createClient as createServerClient, getServiceClient } from "@/app/lib/supabase-server";
-import { askGemini } from "@/app/lib/intelligence/gemini";
+import { askGeminiWithMetadata } from "@/app/lib/intelligence/gemini";
+import { beginAiUsage, recordAiUsage } from "@/app/lib/intelligence/usage-ledger";
 import { readCache, writeCache } from "@/app/lib/intelligence/cache";
 import { researchLaptop } from "@/app/lib/intelligence/providers";
 import type { Laptop } from "@/app/lib/types";
@@ -76,9 +77,50 @@ export async function POST(request: Request) {
 
     const localScores = laptops.map(l => ({ id: l.id, score: score(l, preferences) }));
     const prompt = `قارن بين جهازي NOVATEK التاليين حسب تفضيلات المستخدم. لا تفترض أن الأغلى أفضل. استخدم المواصفات المحلية والمعلومات الخارجية. أرجع JSON فقط بالشكل: {"winnerId":number,"winnerScore":number,"reason":"string","categoryScores":[{"label":"string","left":number,"right":number}],"warnings":["string"]}. الأجهزة: ${JSON.stringify(laptops.map(l => ({ id:l.id,name:l.name,brand:l.brand,cpu:l.cpu,gpu:l.gpu,ram:l.ram,storage:l.storage,screen_size:l.screen_size,screen_resolution:l.screen_resolution,battery:l.battery_health,price:l.price })))}. التفضيلات: ${JSON.stringify(preferences)}. التقييم المحلي: ${JSON.stringify(localScores)}. المعلومات الخارجية: ${research.map(r=>({query:r.query,summary:r.summary,sources:r.sources,prices:r.prices})).map((item) => JSON.stringify(item)).join("\n")}`;
-    const ai = await askGemini(prompt);
+    const usageStartedAt = Date.now();
+    let usage;
+    try {
+      usage = await beginAiUsage(request);
+    } catch (error) {
+      console.error("NOVATEK comparison AI quota check failed:", error instanceof Error ? error.message : "unknown");
+      return NextResponse.json({ error: "المقارنة الذكية غير متاحة مؤقتاً. جرّب لاحقاً." }, { status: 503 });
+    }
+    if (!usage.quota.allowed) {
+      const reason = usage.quota.reason || "rate_limited";
+      await recordAiUsage({
+        userId: usage.user?.id ?? userId,
+        feature: "comparison",
+        comparedProductIds: ids,
+        provider: "quota_guard",
+        status: "failed",
+        latencyMs: Date.now() - usageStartedAt,
+        errorCode: reason,
+      });
+      const message = reason === "daily_limit"
+        ? "وصلت للحد اليومي للمساعد الذكي. جرّب بكرا."
+        : reason === "monthly_limit"
+          ? "وصلت للحد الشهري للمساعد الذكي."
+          : "عم تبعت طلبات بسرعة كبيرة. انتظر شوي وجرب مرة ثانية.";
+      return NextResponse.json({ error: message, usage: usage.quota }, {
+        status: 429,
+        headers: { "Retry-After": reason === "rate_limited" ? "60" : "3600", "Cache-Control": "no-store" }
+      });
+    }
+
+    const aiResult = await askGeminiWithMetadata(prompt);
+    await recordAiUsage({
+      userId: usage.user?.id ?? userId,
+      feature: "comparison",
+      comparedProductIds: ids,
+      provider: aiResult?.provider ?? "fallback_chain",
+      model: aiResult?.model ?? null,
+      status: aiResult?.reply ? "success" : "failed",
+      latencyMs: Date.now() - usageStartedAt,
+      errorCode: aiResult?.reply ? null : "all_providers_unavailable",
+    });
+    const ai = aiResult?.reply ?? null;
     let result: any = null;
-    try { result = ai ? JSON.parse(ai.replace(/^```json\s*|\s*```$/g, "")) : null; } catch { result = null; }
+    try { result = ai ? JSON.parse(ai.replace(/^\x60\x60\x60json\\s*|\\s*\x60\x60\x60$/g, "")) : null; } catch { result = null; }
     if (!result) {
       const winner = [...localScores].sort((a,b)=>b.score-a.score)[0];
       result = { winnerId: winner.id, winnerScore: winner.score, reason: "النتيجة مبنية على تفضيلاتك ومواصفات الجهازين المتوفرة حالياً.", categoryScores: [], warnings: [] };
