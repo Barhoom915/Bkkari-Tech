@@ -1,8 +1,10 @@
+import "server-only";
 import { unstable_cache } from "next/cache";
-import { supabase } from "./supabase";
+import { getServiceClient } from "./supabase-server";
 
 const getSiteSettingCached = unstable_cache(
   async (key: string, fallback: unknown) => {
+    const supabase = getServiceClient();
     const { data, error } = await supabase.from("site_settings").select("value").eq("key", key).maybeSingle();
     if (error || !data?.value) return fallback;
     return data.value;
@@ -12,6 +14,13 @@ const getSiteSettingCached = unstable_cache(
 );
 
 export async function getSiteSetting<T>(key: string, fallback: T): Promise<T> {
+  // Static generation can run without deployment environment variables. In that
+  // case render the safe fallback instead of crashing the entire production build.
+  // Once the app runs with its Supabase configuration, read the real setting.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+    return fallback;
+  }
   return (await getSiteSettingCached(key, fallback)) as T;
 }
 

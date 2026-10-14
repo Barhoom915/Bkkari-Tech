@@ -7,13 +7,13 @@ import { HeroCarousel, StepProductRail, PlaystationProductRail } from "./compone
 import DigitalHomeSection from "./components/DigitalHomeSection";
 import { satofill, isSatoFillBlocked, getSatoFillStorePrice, isSatoFillChatProduct } from "./lib/satofill";
 import StorefrontNotices from "./components/StorefrontNotices";
-import { supabase } from "./lib/supabase";
+import { createClient as createServerClient } from "./lib/supabase-server";
 import type { Laptop } from "./lib/types";
 import { getSiteSetting } from "./lib/site-settings";
 
-async function getPlaystationProducts(){ const { data } = await supabase.from("playstation_products").select("*").eq("is_available", true).order("created_at", { ascending:false }); return data ?? []; }
+async function getPlaystationProducts(supabase: Awaited<ReturnType<typeof createServerClient>>){ const { data } = await supabase.from("playstation_products").select("*").eq("is_available", true).order("created_at", { ascending:false }); return data ?? []; }
 
-async function getLaptops(): Promise<Laptop[]> {
+async function getLaptops(supabase: Awaited<ReturnType<typeof createServerClient>>): Promise<Laptop[]> {
   const { data } = await supabase.from("laptops").select("*").eq("is_available", true).order("created_at", { ascending: false });
   return data ?? [];
 }
@@ -79,10 +79,11 @@ const defaultNotices = [
   ];
 
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [laptops, media, psProducts, notices, digitalHomeProducts] = await Promise.all([getLaptops(), getSiteSetting<Partial<StorefrontMedia>>("storefront_media", {}), getPlaystationProducts(), getSiteSetting<any[]>("storefront_notices", defaultNotices), getDigitalHomeProducts()]);
+  const supabase = await createServerClient();
+  const [laptops, media, psProducts, notices, digitalHomeProducts] = await Promise.all([getLaptops(supabase), getSiteSetting<Partial<StorefrontMedia>>("storefront_media", {}), getPlaystationProducts(supabase), getSiteSetting<any[]>("storefront_notices", defaultNotices), getDigitalHomeProducts()]);
   const activeNotices = Array.isArray(notices) && notices.length ? notices : defaultNotices;
   const mergedMedia: StorefrontMedia = {
     ...defaultMedia,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/app/lib/supabase";
 import { createClient as createServerClient, getServiceClient } from "@/app/lib/supabase-server";
-import { askGemini } from "@/app/lib/intelligence/gemini";
+import { askGeminiWithMetadata } from "@/app/lib/intelligence/gemini";
+import { beginAiUsage, recordAiUsage } from "@/app/lib/intelligence/usage-ledger";
 import { readCache, writeCache } from "@/app/lib/intelligence/cache";
 import { researchLaptop } from "@/app/lib/intelligence/providers";
 import type { Laptop } from "@/app/lib/types";
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const preferences = body.preferences as ComparisonPreferences;
     if (ids.length !== 2) return NextResponse.json({ error: "اختار جهازين بالضبط." }, { status: 400 });
 
-    const { data, error } = await supabase.from("laptops").select("*").in("id", ids);
+    const { data, error } = await serverSupabase.from("laptops").select("*").in("id", ids);
     if (error || !data || data.length !== 2) return NextResponse.json({ error: "ما قدرت أجيب الجهازين." }, { status: 400 });
     const laptops = data as Laptop[];
     const cacheKey = `comparison:${ids.sort((a: number, b: number) => a - b).join("-")}:${JSON.stringify(preferences)}`;
@@ -76,7 +76,48 @@ export async function POST(request: Request) {
 
     const localScores = laptops.map(l => ({ id: l.id, score: score(l, preferences) }));
     const prompt = `قارن بين جهازي NOVATEK التاليين حسب تفضيلات المستخدم. لا تفترض أن الأغلى أفضل. استخدم المواصفات المحلية والمعلومات الخارجية. أرجع JSON فقط بالشكل: {"winnerId":number,"winnerScore":number,"reason":"string","categoryScores":[{"label":"string","left":number,"right":number}],"warnings":["string"]}. الأجهزة: ${JSON.stringify(laptops.map(l => ({ id:l.id,name:l.name,brand:l.brand,cpu:l.cpu,gpu:l.gpu,ram:l.ram,storage:l.storage,screen_size:l.screen_size,screen_resolution:l.screen_resolution,battery:l.battery_health,price:l.price })))}. التفضيلات: ${JSON.stringify(preferences)}. التقييم المحلي: ${JSON.stringify(localScores)}. المعلومات الخارجية: ${research.map(r=>({query:r.query,summary:r.summary,sources:r.sources,prices:r.prices})).map((item) => JSON.stringify(item)).join("\n")}`;
-    const ai = await askGemini(prompt);
+    const usageStartedAt = Date.now();
+    let usage: Awaited<ReturnType<typeof beginAiUsage>>;
+    try {
+      usage = await beginAiUsage(request);
+    } catch (error) {
+      console.error("NOVATEK comparison AI quota check failed:", error instanceof Error ? error.message : "unknown");
+      return NextResponse.json({ error: "المقارنة الذكية غير متاحة مؤقتاً. جرّب لاحقاً." }, { status: 503 });
+    }
+    if (!usage.quota.allowed) {
+      const reason = usage.quota.reason || "rate_limited";
+      await recordAiUsage({
+        userId: usage.user?.id ?? userId,
+        feature: "comparison",
+        comparedProductIds: ids,
+        provider: "quota_guard",
+        status: "failed",
+        latencyMs: Date.now() - usageStartedAt,
+        errorCode: reason,
+      });
+      const message = reason === "daily_limit"
+        ? "وصلت للحد اليومي للمساعد الذكي. جرّب بكرا."
+        : reason === "monthly_limit"
+          ? "وصلت للحد الشهري للمساعد الذكي."
+          : "عم تبعت طلبات بسرعة كبيرة. انتظر شوي وجرب مرة ثانية.";
+      return NextResponse.json({ error: message, usage: usage.quota }, {
+        status: 429,
+        headers: { "Retry-After": reason === "rate_limited" ? "60" : "3600", "Cache-Control": "no-store" }
+      });
+    }
+
+    const aiResult = await askGeminiWithMetadata(prompt);
+    await recordAiUsage({
+      userId: usage.user?.id ?? userId,
+      feature: "comparison",
+      comparedProductIds: ids,
+      provider: aiResult?.provider ?? "fallback_chain",
+      model: aiResult?.model ?? null,
+      status: aiResult?.reply ? "success" : "failed",
+      latencyMs: Date.now() - usageStartedAt,
+      errorCode: aiResult?.reply ? null : "all_providers_unavailable",
+    });
+    const ai = aiResult?.reply ?? null;
     let result: any = null;
     try { result = ai ? JSON.parse(ai.replace(/^```json\s*|\s*```$/g, "")) : null; } catch { result = null; }
     if (!result) {

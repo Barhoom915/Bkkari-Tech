@@ -1,4 +1,6 @@
-import { supabase } from "@/app/lib/supabase";
+import "server-only";
+
+import { getServiceClient } from "@/app/lib/supabase-server";
 
 export type DigitalOverride = {
   product_id: string; custom_name: string | null; custom_price: number | null; custom_category: string | null;
@@ -12,11 +14,13 @@ export function groupKeyFor(product: { categories?: string[] }): string {
 }
 
 export async function getDigitalOverrides(): Promise<Map<string, DigitalOverride>> {
+  const supabase = getServiceClient();
   const { data } = await supabase.from("digital_service_overrides").select("product_id,custom_name,custom_price,custom_category,custom_description,custom_image,is_active").eq("is_active", true);
   return new Map<string, DigitalOverride>((data ?? []).map((x: DigitalOverride) => [String(x.product_id), x]));
 }
 
 export async function getGroupOverrides(): Promise<Map<string, string>> {
+  const supabase = getServiceClient();
   const { data } = await supabase.from("digital_group_overrides").select("group_key,custom_image");
   return new Map<string, string>((data ?? []).filter((x) => x.custom_image).map((x) => [x.group_key, x.custom_image as string]));
 }

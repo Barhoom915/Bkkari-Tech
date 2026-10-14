@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { supabase } from "@/app/lib/supabase";
+import { createClient as createServerClient } from "@/app/lib/supabase-server";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import type { Laptop } from "@/app/lib/types";
@@ -46,6 +46,7 @@ function priceValueScore(l: Laptop) { return performanceScore(l) / Math.max(1, N
 export default async function ComparePage({ searchParams }: { searchParams: Promise<{ ids?: string }> }) {
   const { ids = "" } = await searchParams;
   const numbers = ids.split(",").map(Number).filter(Boolean).slice(0, 2);
+  const supabase = await createServerClient();
   const { data } = numbers.length ? await supabase.from("laptops").select("*").in("id", numbers) : { data: [] as Laptop[] };
   const laptops = ((data || []) as Laptop[]).filter(l => Boolean(l.images?.[0]));
   const bestPerformance = [...laptops].sort((a, b) => performanceScore(b) - performanceScore(a))[0];

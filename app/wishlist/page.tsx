@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/app/lib/supabase";
 import { createClient } from "@/app/lib/supabase-server";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
@@ -15,7 +14,7 @@ export default async function WishlistPage() {
   const { data: rows } = await server.from("wishlists").select("laptop_id").eq("user_id", user.id).order("created_at", { ascending: false });
   const ids = (rows ?? []).map(r => r.laptop_id);
   let laptops: Laptop[] = [];
-  if (ids.length) { const { data } = await supabase.from("laptops").select("*").in("id", ids); laptops = (data ?? []).filter((l:any)=>Boolean(l.images?.[0])); }
+  if (ids.length) { const { data } = await server.from("laptops").select("*").in("id", ids); laptops = (data ?? []).filter((l:any)=>Boolean(l.images?.[0])); }
   return <><Header/><main className="v71-wishlist-page" dir="rtl">
     <header className="v71-simple-head"><div><span>WISHLIST</span><h1>المفضلة <b>♥</b></h1><p>أجهزتك المحفوظة، مرتبة ببطاقات صغيرة ومناسبة للموبايل.</p></div><Link href="/laptops">تصفح اللابتوبات ←</Link></header>
     {laptops.length ? <div className="v71-wishlist-grid">{laptops.map(l=><article className="v71-wish-card" key={l.id}>
