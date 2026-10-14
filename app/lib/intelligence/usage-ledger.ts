@@ -23,7 +23,15 @@ export async function beginAiUsage(request: Request) {
   const actorKey = user
     ? `user:${user.id}`
     : `guest:${createHash("sha256").update(ip).digest("hex").slice(0, 40)}`;
-  const db = getServiceClient();
+
+  let db: ReturnType<typeof getServiceClient>;
+  try {
+    db = getServiceClient();
+  } catch (error) {
+    console.error("NOVATEK AI quota service client initialization failed:", safeError(error));
+    throw new Error("ai_usage_quota_unavailable");
+  }
+
   const { data: quotaData, error } = await db.rpc("consume_ai_usage_quota", {
     p_actor_key: actorKey,
     p_user_id: user?.id ?? null,
@@ -31,8 +39,34 @@ export async function beginAiUsage(request: Request) {
     p_monthly_limit: 300,
     p_minute_limit: 6,
   });
-  if (error) throw new Error("ai_usage_quota_unavailable");
+
+  if (error) {
+    // Keep the detailed database error server-side only; never expose secrets or raw errors to visitors.
+    console.error("NOVATEK AI quota RPC failed:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      actorType: user ? "authenticated" : "guest",
+    });
+    throw new Error("ai_usage_quota_unavailable");
+  }
+
+  if (!quotaData || typeof quotaData !== "object" || typeof (quotaData as QuotaResult).allowed !== "boolean") {
+    console.error("NOVATEK AI quota RPC returned an invalid payload:", {
+      payloadType: typeof quotaData,
+      actorType: user ? "authenticated" : "guest",
+    });
+    throw new Error("ai_usage_quota_invalid_response");
+  }
+
   return { user, actorKey, quota: quotaData as QuotaResult };
+}
+
+function safeError(error: unknown) {
+  if (!(error instanceof Error)) return { message: "unknown error" };
+  // Avoid logging request headers, credentials, or environment values.
+  return { name: error.name, message: error.message };
 }
 
 export async function recordAiUsage(input: {
