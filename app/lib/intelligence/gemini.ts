@@ -64,6 +64,53 @@ function getErrorBody(value: unknown): string {
   return String(value);
 }
 
+async function askXKiro(
+  input: string,
+  history: ChatMessage[]
+): Promise<string | null> {
+  const apiKey = process.env.XKIRO_API_KEY;
+
+  if (!apiKey) {
+    console.warn("NOVATEK xKiro: XKIRO_API_KEY is missing");
+    return null;
+  }
+
+  const model = process.env.XKIRO_MODEL || "mistralai/mistral-large-4-0";
+
+  try {
+    const res = await fetchWithTimeout(
+      "https://api.xkiro.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: buildMessages(input, history),
+          temperature: 0.3,
+          max_tokens: 700,
+        }),
+      },
+      25000
+    );
+
+    if (!res.ok) {
+      // Do not log response bodies because upstream errors may contain sensitive data.
+      console.error("NOVATEK xKiro API error:", { status: res.status, model });
+      return null;
+    }
+
+    const data = await res.json();
+    const content = data?.choices?.[0]?.message?.content;
+    return typeof content === "string" && content.trim() ? content.trim() : null;
+  } catch (error) {
+    console.error("NOVATEK xKiro request failed:", getErrorBody(error));
+    return null;
+  }
+}
+
 async function askAshna(
   input: string,
   history: ChatMessage[]
@@ -367,6 +414,7 @@ export async function askGeminiWithMetadata(
   history: ChatMessage[] = []
 ): Promise<AIProviderResult | null> {
   const providers = [
+    { name: "xKiro", model: process.env.XKIRO_MODEL || "mistralai/mistral-large-4-0", fn: () => askXKiro(input, history) },
     { name: "Ashna", model: process.env.ASHNA_MODEL || "gpt-4o-mini", fn: () => askAshna(input, history) },
     { name: "Groq", model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", fn: () => askGroq(input, history) },
     { name: "OpenRouter", model: process.env.OPENROUTER_MODEL || "openrouter/free", fn: () => askOpenRouter(input, history) },
