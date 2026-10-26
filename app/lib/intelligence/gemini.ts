@@ -17,6 +17,9 @@ const SYSTEM_PROMPT = `
 `;
 
 const TIMEOUT_MS = 12000;
+const DEFAULT_MAX_TOKENS = 700;
+// Total time budget across the whole provider chain (must stay below the route's maxDuration).
+const DEFAULT_DEADLINE_MS = 45000;
 
 function buildMessages(
   input: string,
@@ -66,7 +69,8 @@ function getErrorBody(value: unknown): string {
 
 async function askAshna(
   input: string,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  maxTokens = DEFAULT_MAX_TOKENS
 ): Promise<string | null> {
   const apiKey = process.env.ASHNA_API_KEY;
 
@@ -92,7 +96,7 @@ async function askAshna(
           model,
           messages,
           temperature: 0.3,
-          max_tokens: 700,
+          max_tokens: maxTokens,
         }),
       }
     );
@@ -134,7 +138,8 @@ async function askAshna(
 
 async function askGroq(
   input: string,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  maxTokens = DEFAULT_MAX_TOKENS
 ): Promise<string | null> {
   const apiKey = process.env.GROQ_API_KEY;
 
@@ -162,7 +167,7 @@ async function askGroq(
           messages,
           reasoning_effort: "low",
           temperature: 0.3,
-          max_tokens: 700,
+          max_tokens: maxTokens,
         }),
       }
     );
@@ -201,7 +206,8 @@ async function askGroq(
 
 async function askOpenRouter(
   input: string,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  maxTokens = DEFAULT_MAX_TOKENS
 ): Promise<string | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -232,7 +238,7 @@ async function askOpenRouter(
           model,
           messages,
           temperature: 0.3,
-          max_tokens: 700,
+          max_tokens: maxTokens,
         }),
       }
     );
@@ -271,7 +277,8 @@ async function askOpenRouter(
 
 async function askGeminiProvider(
   input: string,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  maxTokens = DEFAULT_MAX_TOKENS
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -310,7 +317,7 @@ async function askGeminiProvider(
           contents,
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 700,
+            maxOutputTokens: maxTokens,
             thinkingConfig: {
               thinkingLevel: "low",
             },
@@ -362,18 +369,33 @@ async function askGeminiProvider(
 
 export type AIProviderResult = { reply: string; provider: string; model: string | null };
 
+export type AskOptions = {
+  /** Output token cap per provider call. Structured JSON answers need more than chat replies. */
+  maxTokens?: number;
+  /** Stop trying further providers once this many ms have passed since the call started. */
+  deadlineMs?: number;
+};
+
 export async function askGeminiWithMetadata(
   input: string,
-  history: ChatMessage[] = []
+  history: ChatMessage[] = [],
+  options: AskOptions = {}
 ): Promise<AIProviderResult | null> {
+  const maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
+  const deadlineMs = options.deadlineMs ?? DEFAULT_DEADLINE_MS;
+  const startedAt = Date.now();
   const providers = [
-    { name: "Ashna", model: process.env.ASHNA_MODEL || "gpt-4o-mini", fn: () => askAshna(input, history) },
-    { name: "Groq", model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", fn: () => askGroq(input, history) },
-    { name: "OpenRouter", model: process.env.OPENROUTER_MODEL || "openrouter/free", fn: () => askOpenRouter(input, history) },
-    { name: "Gemini", model: process.env.GEMINI_MODEL || "gemini-3.8-flash", fn: () => askGeminiProvider(input, history) },
+    { name: "Ashna", model: process.env.ASHNA_MODEL || "gpt-4o-mini", fn: () => askAshna(input, history, maxTokens) },
+    { name: "Groq", model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", fn: () => askGroq(input, history, maxTokens) },
+    { name: "OpenRouter", model: process.env.OPENROUTER_MODEL || "openrouter/free", fn: () => askOpenRouter(input, history, maxTokens) },
+    { name: "Gemini", model: process.env.GEMINI_MODEL || "gemini-3.8-flash", fn: () => askGeminiProvider(input, history, maxTokens) },
   ];
 
   for (const provider of providers) {
+    if (Date.now() - startedAt > deadlineMs) {
+      console.warn(`NOVATEK AI chain stopped before ${provider.name}: time budget exceeded`);
+      break;
+    }
     try {
       const reply = await provider.fn();
       if (reply) {

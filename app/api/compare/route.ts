@@ -7,6 +7,35 @@ import { researchLaptop } from "@/app/lib/intelligence/providers";
 import type { Laptop } from "@/app/lib/types";
 import type { ComparisonPreferences } from "@/app/lib/intelligence/types";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+// The AI provider chain can take longer than the default serverless limit.
+export const maxDuration = 60;
+
+function normalizePreferences(raw: unknown): ComparisonPreferences {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, 12) : []);
+  const str = (v: unknown, fallback: string) => (typeof v === "string" && v ? v : fallback);
+  return {
+    uses: list(r.uses),
+    priorities: list(r.priorities),
+    weight: str(r.weight, "medium") as ComparisonPreferences["weight"],
+    screen: list(r.screen),
+    performance: str(r.performance, "medium") as ComparisonPreferences["performance"],
+    gaming: str(r.gaming, "none") as ComparisonPreferences["gaming"],
+    mobility: str(r.mobility, "medium") as ComparisonPreferences["mobility"],
+    budget: str(r.budget, "value") as ComparisonPreferences["budget"],
+  };
+}
+
+function parseAiJson(text: string | null): Record<string, unknown> | null {
+  if (!text) return null;
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end <= start) return null;
+  try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
+}
+
 function score(l: Laptop, p: ComparisonPreferences) {
   const t = `${l.cpu || ""} ${l.gpu || ""} ${l.category || ""}`.toLowerCase();
   const gaming = /gaming|rtx|gtx|radeon|geforce/.test(t) ? 20 : 6;
@@ -15,7 +44,7 @@ function score(l: Laptop, p: ComparisonPreferences) {
   const screen = /2k|qhd|1440|1600|4k|2160|uhd/i.test(`${l.screen_resolution} ${l.screen_size}`) ? 12 : 7;
   const battery = Number((String(l.battery_health || "").match(/\d+/) || [60])[0]);
   const perf = /i9|ultra 9|ryzen 9|rtx 40|rtx 50/.test(t) ? 20 : /i7|ultra 7|ryzen 7|rtx|gtx/.test(t) ? 15 : 10;
-  let total = perf + ram + storage + screen + Math.min(15, battery / 7) + gaming;
+  let total = perf + ram + storage + screen + Math.min(15, battery / 7);
   if (p.uses.some(x => /gaming/i.test(x))) total += gaming;
   if (p.priorities.includes("battery")) total += Math.min(10, battery / 10);
   if (p.priorities.includes("screen")) total += screen / 2;
@@ -45,13 +74,14 @@ export async function POST(request: Request) {
     if (usageRow?.reset_at && new Date(usageRow.reset_at).getTime() <= now) used = 0;
     const limit = 10;
     if (used >= limit) return NextResponse.json({ error: "وصلت للحد الشهري للمقارنات (10 مقارنات). بيتجدد رصيدك مع بداية الشهر الجاي.", quota: { used, remaining: 0, limit } }, { status: 429 });
-    const preferences = body.preferences as ComparisonPreferences;
     if (ids.length !== 2) return NextResponse.json({ error: "اختار جهازين بالضبط." }, { status: 400 });
+    const preferences = normalizePreferences(body.preferences);
 
     const { data, error } = await serverSupabase.from("laptops").select("*").in("id", ids);
     if (error || !data || data.length !== 2) return NextResponse.json({ error: "ما قدرت أجيب الجهازين." }, { status: 400 });
-    const laptops = data as Laptop[];
-    const cacheKey = `comparison:${ids.sort((a: number, b: number) => a - b).join("-")}:${JSON.stringify(preferences)}`;
+    const laptops = ids.map((id) => (data as Laptop[]).find((l) => Number(l.id) === id)).filter(Boolean) as Laptop[];
+    if (laptops.length !== 2) return NextResponse.json({ error: "ما قدرت أجيب الجهازين." }, { status: 400 });
+    const cacheKey = `comparison:${[...ids].sort((a: number, b: number) => a - b).join("-")}:${JSON.stringify(preferences)}`;
     const cached = await readCache(cacheKey, 86400);
     if (cached) {
       const consumed = await consumeComparison(service, userId, used, limit);
@@ -59,23 +89,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ ...cached.facts, sources: cached.sources, research: (cached.facts as any)?.research || [], cached: true, quota: consumed });
     }
 
-    const research = await Promise.all(laptops.map(async (l) => {
-      const key = `laptop-research:${l.id}:${l.name}`;
-      const hit = await readCache(key, 604800);
-      if (hit) return hit;
-      try {
-        const fresh = await researchLaptop(`${l.name} ${l.cpu || ""} ${l.gpu || ""} specifications review`);
-        const merged = { query: l.name, summary: fresh.map(x => x.summary).filter(Boolean).join("\n\n"), facts: {}, sources: fresh.flatMap(x => x.sources), prices: fresh.flatMap(x => x.prices || []), fetchedAt: new Date().toISOString() };
-        if (fresh.length) await writeCache(key, merged, 604800);
-        return merged;
-      } catch (error) {
-        console.error(`NOVATEK research error for laptop ${l.id}:`, error);
-        return { query: l.name, summary: "", facts: {}, sources: [], prices: [], fetchedAt: new Date().toISOString() };
-      }
-    }));
-
-    const localScores = laptops.map(l => ({ id: l.id, score: score(l, preferences) }));
-    const prompt = `قارن بين جهازي NOVATEK التاليين حسب تفضيلات المستخدم. لا تفترض أن الأغلى أفضل. استخدم المواصفات المحلية والمعلومات الخارجية. أرجع JSON فقط بالشكل: {"winnerId":number,"winnerScore":number,"reason":"string","categoryScores":[{"label":"string","left":number,"right":number}],"warnings":["string"]}. الأجهزة: ${JSON.stringify(laptops.map(l => ({ id:l.id,name:l.name,brand:l.brand,cpu:l.cpu,gpu:l.gpu,ram:l.ram,storage:l.storage,screen_size:l.screen_size,screen_resolution:l.screen_resolution,battery:l.battery_health,price:l.price })))}. التفضيلات: ${JSON.stringify(preferences)}. التقييم المحلي: ${JSON.stringify(localScores)}. المعلومات الخارجية: ${research.map(r=>({query:r.query,summary:r.summary,sources:r.sources,prices:r.prices})).map((item) => JSON.stringify(item)).join("\n")}`;
     const usageStartedAt = Date.now();
     let usage: Awaited<ReturnType<typeof beginAiUsage>>;
     try {
@@ -106,7 +119,24 @@ export async function POST(request: Request) {
       });
     }
 
-    const aiResult = await askGeminiWithMetadata(prompt);
+    const research = await Promise.all(laptops.map(async (l) => {
+      const key = `laptop-research:${l.id}:${l.name}`;
+      const hit = await readCache(key, 604800);
+      if (hit) return hit;
+      try {
+        const fresh = await researchLaptop(`${l.name} ${l.cpu || ""} ${l.gpu || ""} specifications review`);
+        const merged = { query: l.name, summary: fresh.map(x => x.summary).filter(Boolean).join("\n\n"), facts: {}, sources: fresh.flatMap(x => x.sources), prices: fresh.flatMap(x => x.prices || []), fetchedAt: new Date().toISOString() };
+        if (fresh.length) await writeCache(key, merged, 604800);
+        return merged;
+      } catch (error) {
+        console.error(`NOVATEK research error for laptop ${l.id}:`, error);
+        return { query: l.name, summary: "", facts: {}, sources: [], prices: [], fetchedAt: new Date().toISOString() };
+      }
+    }));
+
+    const localScores = laptops.map(l => ({ id: l.id, score: score(l, preferences) }));
+    const prompt = `قارن بين جهازي NOVATEK التاليين حسب تفضيلات المستخدم. لا تفترض أن الأغلى أفضل. استخدم المواصفات المحلية والمعلومات الخارجية. أرجع JSON فقط (بدون أي نص خارجه) وباختصار: reason جملتين كحد أقصى، categoryScores خمس فئات كحد أقصى، warnings اثنين كحد أقصى. الشكل: {"winnerId":number,"winnerScore":number,"reason":"string","categoryScores":[{"label":"string","left":number,"right":number}],"warnings":["string"]}. الأجهزة: ${JSON.stringify(laptops.map(l => ({ id:l.id,name:l.name,brand:l.brand,cpu:l.cpu,gpu:l.gpu,ram:l.ram,storage:l.storage,screen_size:l.screen_size,screen_resolution:l.screen_resolution,battery:l.battery_health,price:l.price })))}. التفضيلات: ${JSON.stringify(preferences)}. التقييم المحلي: ${JSON.stringify(localScores)}. المعلومات الخارجية: ${research.map(r=>({query:r.query,summary:r.summary,sources:r.sources,prices:r.prices})).map((item) => JSON.stringify(item)).join("\n")}`;
+    const aiResult = await askGeminiWithMetadata(prompt, [], { maxTokens: 2000, deadlineMs: 45000 });
     await recordAiUsage({
       userId: usage.user?.id ?? userId,
       feature: "comparison",
@@ -118,11 +148,23 @@ export async function POST(request: Request) {
       errorCode: aiResult?.reply ? null : "all_providers_unavailable",
     });
     const ai = aiResult?.reply ?? null;
-    let result: any = null;
-    try { result = ai ? JSON.parse(ai.replace(/^```json\s*|\s*```$/g, "")) : null; } catch { result = null; }
-    if (!result) {
-      const winner = [...localScores].sort((a,b)=>b.score-a.score)[0];
-      result = { winnerId: winner.id, winnerScore: winner.score, reason: "النتيجة مبنية على تفضيلاتك ومواصفات الجهازين المتوفرة حالياً.", categoryScores: [], warnings: [] };
+    let result: any = parseAiJson(ai); // eslint-disable-line @typescript-eslint/no-explicit-any
+    const localWinner = [...localScores].sort((a, b) => b.score - a.score)[0];
+    const winnerOk = result && ids.includes(Number(result.winnerId));
+    if (!winnerOk) {
+      // Missing/invalid AI answer: fall back to the local score instead of a wrong winnerId.
+      result = {
+        winnerId: localWinner.id,
+        winnerScore: localWinner.score,
+        reason: "النتيجة مبنية على تفضيلاتك ومواصفات الجهازين المتوفرة حالياً.",
+        categoryScores: [],
+        warnings: [],
+      };
+    } else {
+      result.winnerId = Number(result.winnerId);
+      result.winnerScore = Math.max(0, Math.min(100, Math.round(Number(result.winnerScore) || localScores.find((x) => x.id === result.winnerId)?.score || 0)));
+      result.categoryScores = Array.isArray(result.categoryScores) ? result.categoryScores : [];
+      result.warnings = Array.isArray(result.warnings) ? result.warnings : [];
     }
     const payload = {
       ...result,
