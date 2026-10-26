@@ -6,6 +6,7 @@ import { readCache, writeCache } from "@/app/lib/intelligence/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function getMessageText(message: any): string {
   if (!message) return "";
