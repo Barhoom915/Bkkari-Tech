@@ -16,10 +16,10 @@ const benefits = [
 ];
 
 const plans = [
-  { name: "مجاني", subtitle: "للبداية واكتشاف الخدمة", accent: "border-slate-300", price: "مجاني", items: ["30 رسالة يومياً", "مقارنات أساسية", "تصفح العروض المتاحة"] },
-  { name: "Plus", subtitle: "مزايا أكثر للاستخدام اليومي", accent: "border-orange-400", price: "سيُعلن لاحقاً", items: ["حدود استخدام أعلى", "مقارنات أكثر", "كوبونات ومكافآت للأعضاء"], featured: true },
-  { name: "Pro", subtitle: "لمن يحتاج أدوات أوسع", accent: "border-sky-500", price: "سيُعلن لاحقاً", items: ["حدود أعلى حسب الخطة", "مقارنات موسعة", "عروض ونقاط بمزايا إضافية"] },
-  { name: "Elite", subtitle: "تجربة العضوية الأوسع", accent: "border-violet-500", price: "سيُعلن لاحقاً", items: ["أعلى حدود ضمن الخطة", "أوسع خيارات المقارنة", "مزايا ومكافآت مميزة"] },
+  { name: "مجاني", subtitle: "للبداية واكتشاف الخدمة", accent: "border-slate-300", price: "مجاني", items: ["30 رسالة يومياً حالياً", "مقارنات أساسية", "تصفح العروض المتاحة"] },
+  { name: "Plus", subtitle: "مزايا أكثر للاستخدام اليومي", accent: "border-orange-400", price: "$2.99 / شهرياً", items: ["200 رسالة AI Chat شهرياً", "20 مقارنة شهرياً", "كوبونات أسبوعية ونقاط ولاء", "خصومات منتجات تصل إلى 10%"], featured: true },
+  { name: "Pro", subtitle: "لمن يحتاج أدوات أوسع", accent: "border-sky-500", price: "$4.99 / شهرياً", items: ["500 رسالة AI Chat شهرياً", "30 مقارنة شهرياً", "مقارنة حتى 3 أجهزة", "كوبونات حتى 20% وخصومات منتجات حتى 15%"] },
+  { name: "Elite", subtitle: "تجربة العضوية الأوسع", accent: "border-violet-500", price: "$9.99 / شهرياً", items: ["1200 رسالة AI Chat شهرياً", "50 مقارنة شهرياً", "مقارنة حتى 4 أجهزة", "كوبونات حتى 20% وخصومات منتجات حتى 18%"] },
 ];
 
 export default function MembershipPage() {
@@ -36,23 +36,23 @@ export default function MembershipPage() {
           </label>
         </div>
       </section>
-      <section className="relative isolate overflow-hidden bg-slate-950 text-white">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_15%_50%,rgba(249,115,22,0.22),transparent_42%),radial-gradient(ellipse_at_85%_20%,rgba(37,99,235,0.18),transparent_35%)]" />
+      <section className="relative isolate overflow-hidden border-b border-slate-200 bg-white text-slate-900">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_15%_50%,rgba(249,115,22,0.10),transparent_42%),radial-gradient(ellipse_at_85%_20%,rgba(37,99,235,0.06),transparent_35%)]" />
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
           <div>
             <span className="inline-flex rounded-full border border-orange-400/40 bg-orange-400/10 px-4 py-2 text-sm font-bold text-orange-300">NOVATEK MEMBERSHIP</span>
             <h1 className="mt-6 max-w-2xl text-4xl font-black leading-tight sm:text-6xl">تجربة أذكى، <span className="text-orange-400">ومزايا أكثر.</span></h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">قارن اللابتوبات بثقة، استفد من العروض، اجمع نقاط الولاء، واكتشف الخطة المناسبة لطريقتك في استخدام المتجر.</p>
+            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">قارن اللابتوبات بثقة، استفد من العروض، اجمع نقاط الولاء، واكتشف الخطة المناسبة لطريقتك في استخدام المتجر.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#plans" className="rounded-xl bg-orange-500 px-6 py-3.5 font-extrabold text-slate-950 transition hover:bg-orange-400">استكشف الخطط</a>
-              <a href="#benefits" className="rounded-xl border border-white/20 px-6 py-3.5 font-bold text-white transition hover:bg-white/10">شوف المزايا</a>
+              <a href="#benefits" className="rounded-xl border border-slate-200 px-6 py-3.5 font-bold text-slate-700 transition hover:bg-slate-50">شوف المزايا</a>
             </div>
-            <p className="mt-4 text-xs leading-6 text-slate-400">الخطط المدفوعة والعروض قيد التجهيز؛ الأسعار والدفع غير مفعّلين حالياً.</p>
+            <p className="mt-4 text-xs leading-6 text-slate-500">الأسعار الشهرية موضحة. الاشتراك والدفع والتجربة المجانية غير مفعّلة قبل إكمال الاختبار.</p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {[["⌕","مقارنات أذكى"],["％","كوبونات أسبوعية"],["☆","نقاط ومكافآت"],["♧","عروض للأعضاء"]].map(([icon,label]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.05] p-5 shadow-2xl backdrop-blur sm:p-7">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-500/15 text-2xl text-orange-300">{icon}</span>
+              <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-50 text-2xl text-orange-600">{icon}</span>
                 <p className="mt-4 font-extrabold sm:text-lg">{label}</p>
               </div>
             ))}
@@ -82,7 +82,7 @@ export default function MembershipPage() {
           <div className="mx-auto mb-10 max-w-2xl text-center">
             <p className="text-sm font-extrabold text-orange-600">اختار تجربتك</p>
             <h2 className="mt-2 text-3xl font-black sm:text-4xl">خطط العضوية</h2>
-            <p className="mt-3 leading-7 text-slate-600">التقسيم مبدئي لتوضيح التجربة؛ سيتم اعتماد الأسعار والحدود النهائية قبل تفعيل الاشتراكات.</p>
+            <p className="mt-3 leading-7 text-slate-600">اختار الخطة المناسبة إلك. مدد 6 أشهر والسنة ستظهر أسعارها بعد اعتمادها، وما في دفع أو تفعيل اشتراك حالياً.</p>
           </div>
           <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {plans.map((plan) => (
@@ -94,8 +94,8 @@ export default function MembershipPage() {
                 <ul className="mt-5 flex-1 space-y-3 border-t border-slate-100 pt-5 text-sm leading-6 text-slate-700">
                   {plan.items.map((item) => <li key={item} className="flex gap-2"><span className="font-black text-orange-500">✓</span><span>{item}</span></li>)}
                 </ul>
-                <Link href="/account" className={`mt-6 block rounded-xl px-4 py-3 text-center text-sm font-extrabold transition ${plan.featured ? "bg-orange-500 text-slate-950 hover:bg-orange-400" : "bg-slate-100 text-slate-800 hover:bg-slate-200"}`}>
-                  {plan.name === "مجاني" ? "ابدأ مجاناً" : "قريباً"}
+                <Link href={plan.name === "مجاني" ? "/account" : "/membership"} className={`mt-6 block rounded-xl px-4 py-3 text-center text-sm font-extrabold transition ${plan.featured ? "bg-orange-500 text-slate-950 hover:bg-orange-400" : "bg-slate-100 text-slate-800 hover:bg-slate-200"}`}>
+                  {plan.name === "مجاني" ? "ابدأ مجاناً" : "تفاصيل الاشتراك قريباً"}
                 </Link>
               </article>
             ))}
