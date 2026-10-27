@@ -227,8 +227,8 @@ ${sources
     const budgetMatch = catalogQuery.match(/(?:ميزانيتي|بحدود|حدود|أقل من|تحت|budget)[^0-9]{0,16}(\d{2,4})|(?:\$|usd)?\s*(\d{2,4})\s*(?:\$|دولار|usd)/i);
     const budget = budgetMatch ? Number(budgetMatch[1] || budgetMatch[2]) : null;
     const gamingQuestion = /(جيمنج|gaming|ألعاب|العاب|للعب|كرت شاشة قوي)/i.test(catalogQuery);
-    const requestedTwoGb = /(2\s?gb|2\s?جيجا|2\s?غ\.?ب)/i.test(last);
-    const queryWords = last.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((word) => word.length > 2);
+    const requestedTwoGb = /(2\s?gb|2\s?جيجا|2\s?غ\.?ب)/i.test(catalogQuery);
+    const queryWords = catalogQuery.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((word) => word.length > 2);
     const rankedCatalogProducts = [...catalogProducts].sort((a, b) => {
       const score = (p: typeof catalogProducts[number]) => {
         const haystack = `${p.name} ${p.brand || ""} ${p.model || ""} ${p.category || ""} ${p.cpu || ""} ${p.ram || ""} ${p.storage || ""} ${p.gpu || ""} ${p.description || ""}`.toLowerCase();
