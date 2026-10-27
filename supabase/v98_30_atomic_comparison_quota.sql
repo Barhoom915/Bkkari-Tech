@@ -45,8 +45,7 @@ begin
   update public.comparison_usage
   set comparison_count = v_used,
       free_limit = v_limit,
-      reset_at = v_row.reset_at,
-      updated_at = v_now
+      reset_at = v_row.reset_at
   where user_id = p_user_id;
 
   return jsonb_build_object(
