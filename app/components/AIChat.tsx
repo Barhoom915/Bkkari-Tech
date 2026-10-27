@@ -149,8 +149,43 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   }
 
   async function regenerateLastAnswer() {
-    const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
-    if (lastUserMessage && !loading) await sendMessage(lastUserMessage.text);
+    if (loading || !messages.some((message) => message.role === "user")) return;
+    const lastUserIndex = messages.map((message) => message.role).lastIndexOf("user");
+    const context = messages.slice(0, lastUserIndex + 1);
+    setMessages(context);
+    setLoading(true);
+    setFeedbackByMessage({});
+    try {
+      const res = await fetch("/api/ai-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: context.slice(-25) }),
+      });
+      let data: { reply?: string; products?: Product[] } = {};
+      try { data = await res.json(); } catch { /* safe fallback below */ }
+      const reply = typeof data.reply === "string" && data.reply.trim()
+        ? data.reply.trim()
+        : !res.ok
+          ? "تعذّر إعادة الرد حالياً. جرّب بعد قليل."
+          : "ما وصلني رد واضح. جرّب مرة ثانية.";
+      const completed: ChatMessage[] = [...context, {
+        role: "assistant",
+        text: reply,
+        products: Array.isArray(data.products) ? data.products.slice(0, 3) : [],
+      }];
+      setMessages(completed);
+      setTypingMessageIndex(completed.length - 1);
+      saveSession(completed);
+    } catch {
+      const completed: ChatMessage[] = [...context, {
+        role: "assistant",
+        text: "ما قدرت أعيد الرد بسبب مشكلة بالاتصال. جرّب مرة ثانية.",
+      }];
+      setMessages(completed);
+      saveSession(completed);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function copyAnswer(text: string, index: number) {
