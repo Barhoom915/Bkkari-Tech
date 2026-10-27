@@ -137,6 +137,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   }
 
   function restoreSession(session: ChatSession) {
+    currentSessionId.current = session.id;
     setMessages(session.messages);
     setHistoryOpen(false);
   }
