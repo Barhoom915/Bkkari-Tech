@@ -16,6 +16,7 @@ type Product = {
 };
 type ChatMessage = { role: "user" | "assistant"; text: string; products?: Product[] };
 type ChatSession = { id: string; title: string; updatedAt: number; messages: ChatMessage[] };
+type Feedback = "up" | "down" | null;
 
 const WELCOME_MESSAGE =
   "أهلاً فيك بـ NOVATEK 👋\nأنا مساعد المتجر، فيني ساعدك تختار لابتوب أو تتعرّف على خدماتنا. شو حابب تلاقي اليوم؟";
@@ -49,6 +50,8 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   ]);
   const [typingMessageIndex, setTypingMessageIndex] = useState<number | null>(null);
   const [typedText, setTypedText] = useState("");
+  const [feedbackByMessage, setFeedbackByMessage] = useState<Record<number, Feedback>>({});
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentSessionId = useRef<string>(`${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
@@ -145,6 +148,21 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
     }
   }
 
+  async function regenerateLastAnswer() {
+    const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+    if (lastUserMessage && !loading) await sendMessage(lastUserMessage.text);
+  }
+
+  async function copyAnswer(text: string, index: number) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageIndex(index);
+      window.setTimeout(() => setCopiedMessageIndex((current) => current === index ? null : current), 1800);
+    } catch {
+      setCopiedMessageIndex(null);
+    }
+  }
+
   async function send(e: FormEvent) {
     e.preventDefault();
     await sendMessage(input);
@@ -190,6 +208,14 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
       {messages.map((m, i) => (
         <div key={i} className={`ai-chat-message-row ${m.role}`}>
           <div className={`ai-msg ${m.role}`} dir="auto">{m.role === "assistant" && i === typingMessageIndex ? typedText : m.text}</div>
+          {m.role === "assistant" && i !== typingMessageIndex && (
+            <div className="ai-chat-message-actions" aria-label="أدوات الرد">
+              <button type="button" onClick={() => void copyAnswer(m.text, i)} aria-label="نسخ الرد" title="نسخ الرد">{copiedMessageIndex === i ? "تم النسخ ✓" : "نسخ ↗"}</button>
+              <button type="button" aria-label="الرد مفيد" aria-pressed={feedbackByMessage[i] === "up"} className={feedbackByMessage[i] === "up" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "up" ? null : "up" }))} title="رد مفيد">👍</button>
+              <button type="button" aria-label="الرد غير مفيد" aria-pressed={feedbackByMessage[i] === "down"} className={feedbackByMessage[i] === "down" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "down" ? null : "down" }))} title="رد غير مفيد">👎</button>
+              {i === messages.length - 1 && <button type="button" onClick={() => void regenerateLastAnswer()} disabled={loading} title="إعادة المحاولة">إعادة الرد ↻</button>}
+            </div>
+          )}
           {m.role === "assistant" && m.products && m.products.length > 0 && (
             <div className="ai-chat-product-list" aria-label="أجهزة من متجر NOVATEK">
               {m.products.map((product) => (
@@ -272,7 +298,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="اسأل NOVATEK أي شي عن منتجاتنا وخدماتنا..."
-          aria-label="اكتب سؤالك للمساعد الذكي"
+          aria-label="اكتب سؤالك لمساعد NOVATEK"
           maxLength={4000}
           disabled={loading}
         />
@@ -286,8 +312,8 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
       <div className="ai-chat-embedded ai-chat-page-shell" dir="rtl">
         <div className="ai-chat-head ai-chat-page-head">
           <div className="ai-chat-brand">
-            <span className="ai-chat-avatar"><img src="/brand/novatek-logo-transparent.png" alt="NOVATEK AI" /></span>
-            <div><b>مساعد NOVATEK الذكي ✨</b><small><span className="ai-chat-online-dot" /> نشط الآن</small></div>
+            <span className="ai-chat-avatar"><img src="/brand/novatek-logo-transparent.png" alt="شعار NOVATEK" /></span>
+            <div><b>مساعد NOVATEK ✨</b><small><span className="ai-chat-online-dot" /> نشط الآن</small></div>
           </div>
           <button type="button" className="ai-chat-menu-toggle" onClick={() => setMenuOpen((v) => !v)} aria-label="فتح قائمة المساعد" aria-expanded={menuOpen}>☰</button>
         </div>
@@ -297,7 +323,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <Link className="ai-chat-fab" href="/ai-chat" aria-label="افتح مساعد NOVATEK الذكي">
+    <Link className="ai-chat-fab" href="/ai-chat" aria-label="افتح مساعد NOVATEK">
       <span>✨</span>
     </Link>
   );
