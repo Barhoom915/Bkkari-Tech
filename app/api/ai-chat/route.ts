@@ -189,6 +189,40 @@ ${sources
       }
     }
 
+    // Ground recommendations in real, currently available NOVATEK stock.
+    let catalogProducts: Array<{
+      id: number; name: string; brand: string | null; model: string | null;
+      category: string | null; price: number; cpu: string | null; ram: string | null;
+      storage: string | null; gpu: string | null; screen_size: string | null;
+      condition: string | null; description: string | null; features: string[] | null;
+      images: string[] | null; stock_quantity: number;
+    }> = [];
+    if (laptopQuestion) {
+      try {
+        const supabase = await createServerClient();
+        const { data, error } = await supabase
+          .from("laptops")
+          .select("id,name,brand,model,category,price,cpu,ram,storage,gpu,screen_size,condition,description,features,images,stock_quantity")
+          .eq("is_available", true)
+          .gt("stock_quantity", 0)
+          .order("is_featured", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(15);
+        if (error) throw error;
+        catalogProducts = (data ?? []) as typeof catalogProducts;
+      } catch (error) {
+        console.error("NOVATEK AI catalog grounding failed:", error instanceof Error ? error.message : "unknown");
+      }
+    }
+
+    const catalogContext = catalogProducts.length
+      ? `\n\nبيانات كتالوج NOVATEK الفعلية (المرجع الأساسي، لا تقترح أجهزة غير موجودة هنا):\n${catalogProducts.map((p, index) =>
+          `${index + 1}. ${p.name} | الشركة: ${p.brand || "غير محدد"} | الموديل: ${p.model || "غير محدد"} | التصنيف: ${p.category || "غير محدد"} | السعر: ${p.price} | CPU: ${p.cpu || "غير مسجل"} | RAM: ${p.ram || "غير مسجل"} | التخزين: ${p.storage || "غير مسجل"} | GPU: ${p.gpu || "غير مسجل"} | الشاشة: ${p.screen_size || "غير مسجل"} | الحالة: ${p.condition || "غير مسجلة"} | الوصف: ${p.description || "لا يوجد"} | الميزات: ${Array.isArray(p.features) ? p.features.join(", ") : "لا توجد"}`
+        ).join("\n")}\nإذا لم يوجد جهاز مناسب تماماً، وضّح ذلك ولا تخترع موديلات أو مواصفات. لا تصف كرت 2GB بأنه مناسب للألعاب الحديثة المتوسطة من دون توضيح حدوده، ولا تغيّر أي مواصفة مسجلة.`
+      : laptopQuestion
+        ? "\n\nتعذر تحميل كتالوج الأجهزة الفعلي حالياً. لا تذكر موديلات أو أسعاراً أو مواصفات محددة من عندك؛ أخبر الزبون أنك لا تستطيع تأكيد الأجهزة المتوفرة الآن."
+        : "";
+
     const history = messages
       .slice(0, -1)
       .map((message: any) => {
@@ -208,32 +242,18 @@ ${sources
      * محرك الذكاء الاصطناعي متعدد المزودين.
      * البحث الخارجي مجرد Context إضافي.
      */
-    const result = await askGeminiWithMetadata(last + context, history);
+    const result = await askGeminiWithMetadata(last + context + catalogContext, history);
 
     if (result?.reply) {
       usageProvider = result.provider;
       usageModel = result.model;
       await recordAiUsage({ userId: usageUserId, provider: usageProvider, model: usageModel, status: "success", latencyMs: Date.now() - usageStartedAt });
-      let products: Array<{
-        id: number; name: string; brand: string | null; price: number;
-        cpu: string | null; ram: string | null; storage: string | null;
-        gpu: string | null; images: string[] | null;
-      }> = [];
-      if (laptopQuestion) {
-        try {
-          const supabase = await createServerClient();
-          const { data } = await supabase
-            .from("laptops")
-            .select("id,name,brand,price,cpu,ram,storage,gpu,images")
-            .eq("is_available", true)
-            .gt("stock_quantity", 0)
-            .order("created_at", { ascending: false })
-            .limit(3);
-          products = (data ?? []) as typeof products;
-        } catch (error) {
-          console.error("NOVATEK AI product cards unavailable:", error instanceof Error ? error.message : "unknown");
-        }
-      }
+      const gamingQuestion = /(جيمنج|gaming|ألعاب|العاب|للعب|كرت شاشة قوي)/i.test(last);
+      const products = laptopQuestion
+        ? (gamingQuestion
+            ? catalogProducts.filter((p) => /(gaming|جيمنج|rtx|gtx|rx\\s?\\d|quadro|p\\d{3,4})/i.test(`${p.name} ${p.category || ""} ${p.gpu || ""}`)).slice(0, 3)
+            : catalogProducts.slice(0, 3))
+        : [];
       return NextResponse.json(
         { reply: result.reply, usage: usage?.quota, products },
         { headers: { "Cache-Control": "no-store" } }
