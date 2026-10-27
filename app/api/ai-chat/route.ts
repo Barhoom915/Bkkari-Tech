@@ -251,7 +251,7 @@ ${sources
       const gamingQuestion = /(جيمنج|gaming|ألعاب|العاب|للعب|كرت شاشة قوي)/i.test(last);
       const products = laptopQuestion
         ? (gamingQuestion
-            ? catalogProducts.filter((p) => /(gaming|جيمنج|rtx|gtx|rx\\s?\\d|quadro|p\\d{3,4})/i.test(`${p.name} ${p.category || ""} ${p.gpu || ""}`)).slice(0, 3)
+            ? catalogProducts.filter((p) => /(gaming|جيمنج|rtx|gtx|rx\s?\d|quadro|p\d{3,4})/i.test(`${p.name} ${p.category || ""} ${p.gpu || ""}`)).slice(0, 3)
             : catalogProducts.slice(0, 3))
         : [];
       return NextResponse.json(
