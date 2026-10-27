@@ -266,6 +266,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
         </div>
       )}
       {messageList}
+      {suggestions}
       <form onSubmit={send} className="ai-chat-form">
         <input
           value={input}
@@ -277,7 +278,6 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
         />
         <button type="submit" disabled={loading || !input.trim()} aria-label="إرسال السؤال">➤</button>
       </form>
-      {suggestions}
     </>
   );
 
