@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 type ChatMessage = { role: "user" | "assistant"; text: string };
 
 const WELCOME_MESSAGE =
-  "أهلاً! أنا مساعد NOVATEK 🤖 اسألني عن اللابتوبات والخدمات، أو عن البرمجة والمشاكل التقنية.";
+  "أهلاً! أنا مساعد NOVATEK 🤖 فيني ساعدك بمواصفات اللابتوبات، مقارنة الأجهزة، وخدمات المتجر والشراء.";
 
 export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -98,7 +98,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
     return (
       <div className="ai-chat-embedded" dir="rtl">
         <div className="ai-chat-head">
-          <div><b>مساعد NOVATEK</b><small>للمساعدة والبرمجة والأسئلة التقنية</small></div>
+          <div><b>مساعد NOVATEK</b><small>مساعدة بمنتجات وخدمات NOVATEK</small></div>
         </div>
         {chatMessages}
       </div>
@@ -110,7 +110,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
       {open && (
         <div className="ai-chat-panel" dir="rtl">
           <div className="ai-chat-head">
-            <div><b>مساعد NOVATEK</b><small>للمساعدة والبرمجة والأسئلة التقنية</small></div>
+            <div><b>مساعد NOVATEK</b><small>مساعدة بمنتجات وخدمات NOVATEK</small></div>
             <button onClick={() => setOpen(false)} aria-label="إغلاق المحادثة">×</button>
           </div>
           {chatMessages}
