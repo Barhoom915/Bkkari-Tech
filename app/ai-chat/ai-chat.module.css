@@ -1,62 +1,82 @@
 .page {
-  flex: 1;
-  min-height: calc(100vh - 80px);
-  padding: 28px 16px 50px;
-  background: radial-gradient(ellipse at 50% 0%, rgba(240,130,30,.12), transparent 52%), var(--bg-base);
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #fffaf5;
+  font-family: "Tajawal", "IBM Plex Sans Arabic", sans-serif;
 }
-.wrap { width: min(900px, 100%); margin: 0 auto; }
-.intro { text-align: center; margin: 0 auto 20px; max-width: 650px; }
-.eyebrow { display: inline-flex; align-items: center; gap: 7px; border: 1px solid rgba(240,130,30,.3); background: rgba(240,130,30,.08); color: #b45309; border-radius: 999px; padding: 7px 13px; font-size: 11px; font-weight: 800; }
-.intro h1 { margin: 14px 0 8px; font-family: "Tajawal","IBM Plex Sans Arabic",sans-serif; font-size: clamp(26px,4vw,38px); font-weight: 800; line-height: 1.35; color: var(--ink); }
-.intro p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.9; }
 .page :global(.ai-chat-fab) { display: none !important; }
 .page :global(.ai-chat-embedded.ai-chat-page-shell) {
-  position: relative; display: flex; flex-direction: column;
-  height: min(690px,calc(100dvh - 240px)); min-height: 480px;
-  overflow: hidden; border: 1px solid rgba(240,130,30,.2); border-radius: 26px;
-  background: var(--card); box-shadow: 0 24px 70px rgba(29,40,55,.10),0 5px 24px rgba(240,130,30,.06);
-  font-family: "Tajawal","IBM Plex Sans Arabic",sans-serif;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #fffaf5;
+  box-shadow: none;
+  font-family: "Tajawal", "IBM Plex Sans Arabic", sans-serif;
 }
-.page :global(.ai-chat-page-head) { flex: none; display:flex; align-items:center; justify-content:space-between; padding:17px 20px; border-radius:26px 26px 0 0; background:linear-gradient(110deg,#fff8ef,#fff); border-bottom:1px solid #f4dfcb; }
-.page :global(.ai-chat-page-head .ai-chat-brand) { gap:12px; }
-.page :global(.ai-chat-page-head .ai-chat-brand b) { font-size:15px; color:#a84c08; }
-.page :global(.ai-chat-page-head .ai-chat-brand small) { display:flex; align-items:center; gap:7px; font-size:11px; color:#16834a; }
-.page :global(.ai-chat-avatar) { display:flex; width:44px; height:44px; align-items:center; justify-content:center; border:1px solid #f4d8bd; border-radius:15px; background:#fff7ee; overflow:hidden; }
-.page :global(.ai-chat-avatar img) { width:100%; height:100%; object-fit:contain; padding:4px; }
-.page :global(.ai-chat-menu-toggle) { width:42px; height:42px; border:1px solid #f0ddca; border-radius:14px; background:#fff8f0; color:#b45309; font-size:21px; cursor:pointer; box-shadow:0 5px 18px rgba(240,130,30,.09); }
-.page :global(.ai-chat-suggestions) { order:0; padding:14px 20px 10px; border-bottom:1px solid #f3e4d6; background:var(--card); }
-.page :global(.ai-chat-suggestions-title) { text-align:right; margin:0 0 9px; font-size:12px; color:var(--ink); }
-.page :global(.ai-chat-suggestion-list) { display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:0; }
-.page :global(.ai-chat-suggestion) { position:relative; width:100%; justify-content:flex-start; min-height:43px; padding:10px 14px; border-radius:14px; white-space:normal; text-align:right; background:var(--card); color:var(--ink); border-color:#f1d8c0; box-shadow:0 8px 22px rgba(240,130,30,.08),0 2px 0 rgba(240,130,30,.08); font:700 12px/1.5 "Tajawal","IBM Plex Sans Arabic",sans-serif; }
-.page :global(.ai-chat-suggestion):after { content:""; position:absolute; inset:auto 18px -5px 18px; height:8px; border-radius:50%; background:rgba(240,130,30,.24); filter:blur(8px); z-index:0; }
-.page :global(.ai-chat-suggestion:hover:not(:disabled)) { border-color:#f0821e; background:#fff0df; box-shadow:0 8px 22px rgba(240,130,30,.16); }
-.page :global(.ai-chat-toolbar) { flex:none; justify-content:flex-start; gap:8px; padding:10px 18px; background:var(--card); }
-.page :global(.ai-chat-tool-button) { font-family:"Tajawal","IBM Plex Sans Arabic",sans-serif; }
-.page :global(.ai-chat-messages) { flex:1; height:auto; min-height:120px; max-height:none; overflow-y:auto; background:#fffaf5; padding:17px 18px; }
-.page :global(.ai-chat-message-row) { animation: ai-chat-appear .26s ease both; }
-.page :global(.ai-msg) { max-width:min(88%,600px); font-size:14px; line-height:2; white-space:pre-wrap; overflow-wrap:anywhere; }
-.page :global(.ai-msg.assistant) { background:#fff; border:1px solid #f2e4d7; border-radius:6px 18px 18px 18px; color:#28221e; }
-.page :global(.ai-msg.user) { background:linear-gradient(135deg,#f0821e,#d9600d); border-radius:18px 6px 18px 18px; }
-.page :global(.ai-thinking-dots i) { background:#f0821e; }
-.page :global(.ai-chat-form) { flex:none; padding:12px; border-top:1px solid #f2e4d7; background:#fff; gap:8px; border-radius:0 0 26px 26px; }
-.page :global(.ai-chat-form input) { font-family:"Tajawal","IBM Plex Sans Arabic",sans-serif; font-size:13px; }
-.page :global(.ai-chat-form input:focus) { border-color:#f0821e; box-shadow:0 0 0 3px rgba(240,130,30,.13); }
-.page :global(.ai-chat-form button) { background:linear-gradient(135deg,#f0821e,#d9600d); box-shadow:0 5px 14px rgba(240,130,30,.22); }
-.page :global(.ai-chat-product-card) { border-color:#f0dfcf; }
-.page :global(.ai-chat-product-info>b) { color:#b45309; }
-.page :global(.ai-chat-product-action) { background:#fff0df; color:#a84c08; }
-.page :global(.ai-chat-product-action:hover) { background:#f0821e; color:#fff; }
-.page :global(.ai-chat-page-menu) { position:absolute; z-index:20; top:72px; left:14px; width:min(265px,calc(100% - 28px)); display:grid; gap:5px; padding:10px; border:1px solid #f0ddca; border-radius:18px; background:var(--card); box-shadow:0 22px 55px rgba(31,41,55,.18); }
-.page :global(.ai-chat-page-menu button), .page :global(.ai-chat-page-menu a) { display:block; width:100%; padding:12px; border:0; border-radius:11px; background:transparent; color:var(--ink); font:700 12px/1.6 "Tajawal","IBM Plex Sans Arabic",sans-serif; text-align:right; text-decoration:none; cursor:pointer; }
-.page :global(.ai-chat-page-menu button:hover), .page :global(.ai-chat-page-menu a:hover) { background:#fff2e4; color:#a84c08; }
-@media(max-width:640px) {
-  .page { padding:18px 10px 28px; }
-  .intro { margin-bottom:14px; }
-  .page :global(.ai-chat-embedded.ai-chat-page-shell) { height:calc(100dvh - 230px); min-height:440px; border-radius:20px; }
-  .page :global(.ai-chat-page-head) { padding:12px 13px; border-radius:20px 20px 0 0; }
-  .page :global(.ai-chat-suggestions) { padding:10px 12px 8px; }
-  .page :global(.ai-chat-suggestion) { min-height:38px; padding:8px 11px; }
-  .page :global(.ai-chat-toolbar) { padding:8px 12px; }
-  .page :global(.ai-chat-messages) { padding:12px 10px; }
-  .page :global(.ai-chat-form) { padding:9px; border-radius:0 0 20px 20px; }
+.page :global(.ai-chat-page-head) {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+  padding: 12px clamp(14px, 4vw, 42px);
+  background: linear-gradient(110deg, #fff5e9, #fff);
+  border-bottom: 1px solid #f1e2d4;
+}
+.page :global(.ai-chat-page-head .ai-chat-brand) { display: flex; align-items: center; gap: 12px; }
+.page :global(.ai-chat-page-head .ai-chat-brand b) { font-size: 15px; color: #a84c08; }
+.page :global(.ai-chat-page-head .ai-chat-brand small) { display: flex; align-items: center; gap: 7px; margin-top: 4px; font-size: 11px; color: #16834a; }
+.page :global(.ai-chat-avatar) { display: flex; width: 46px; height: 46px; flex: none; align-items: center; justify-content: center; border: 1px solid #f4d8bd; border-radius: 15px; background: #fff7ee; overflow: hidden; }
+.page :global(.ai-chat-avatar img) { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.page :global(.ai-chat-menu-toggle) { width: 43px; height: 43px; border: 1px solid #f0ddca; border-radius: 14px; background: #fff8f0; color: #b45309; font-size: 21px; cursor: pointer; }
+.page :global(.ai-chat-suggestions) { flex: none; padding: 14px clamp(14px, 4vw, 42px) 12px; border-bottom: 1px solid #f3e4d6; background: #fff; }
+.page :global(.ai-chat-suggestions-title) { margin: 0 0 9px; font-size: 12px; color: #40352c; }
+.page :global(.ai-chat-suggestion-list) { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 0; }
+.page :global(.ai-chat-suggestion) { position: relative; width: 100%; min-height: 40px; justify-content: flex-start; padding: 9px 14px; border: 1px solid #f1d8c0; border-radius: 13px; background: #fff; color: #342920; text-align: right; white-space: normal; font: 700 12px/1.6 "Tajawal", "IBM Plex Sans Arabic", sans-serif; box-shadow: 0 5px 18px rgba(240,130,30,.07); }
+.page :global(.ai-chat-suggestion):after { content: ""; position: absolute; inset: auto 18px -5px; height: 8px; border-radius: 50%; background: rgba(240,130,30,.22); filter: blur(8px); z-index: 0; }
+.page :global(.ai-chat-suggestion:hover:not(:disabled)) { border-color: #f0821e; background: #fff5e9; }
+.page :global(.ai-chat-toolbar) { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 8px; padding: 10px clamp(14px, 4vw, 42px); background: #fff; }
+.page :global(.ai-chat-tool-button) { font-family: "Tajawal", "IBM Plex Sans Arabic", sans-serif; }
+.page :global(.ai-chat-messages) { flex: 1; width: 100%; min-height: 0; max-height: none; overflow-y: auto; overscroll-behavior: contain; background: #fffaf5; padding: 22px clamp(14px, 8vw, 110px); scroll-behavior: smooth; }
+.page :global(.ai-chat-message-row) { margin: 0 auto 18px; max-width: 900px; animation: novatek-chat-appear .22s ease both; }
+.page :global(.ai-msg) { max-width: min(88%, 680px); padding: 12px 16px; font-size: 14px; line-height: 2; white-space: pre-wrap; overflow-wrap: anywhere; }
+.page :global(.ai-msg.assistant) { margin-left: auto; background: #fff; border: 1px solid #f0e4d9; border-radius: 6px 18px 18px 18px; color: #28221e; }
+.page :global(.ai-msg.user) { margin-right: auto; background: linear-gradient(135deg, #f0821e, #d9600d); border-radius: 18px 6px 18px 18px; color: #fff; }
+.page :global(.ai-thinking-dots i) { background: #f0821e; }
+.page :global(.ai-chat-product-list) { display: grid; gap: 10px; margin-top: 10px; }
+.page :global(.ai-chat-product-card) { border-color: #f0dfcf; background: #fff; }
+.page :global(.ai-chat-product-info>b) { color: #b45309; }
+.page :global(.ai-chat-product-action) { background: #fff0df; color: #a84c08; }
+.page :global(.ai-chat-product-action:hover) { background: #f0821e; color: #fff; }
+.page :global(.ai-chat-form) { flex: none; display: flex; gap: 10px; align-items: center; padding: 14px clamp(14px, 6vw, 80px) max(14px, env(safe-area-inset-bottom)); border-top: 1px solid #f0e2d6; background: rgba(255,255,255,.97); }
+.page :global(.ai-chat-form input) { min-width: 0; flex: 1; min-height: 48px; padding: 12px 16px; border: 1px solid #ead9c9; border-radius: 16px; background: #fff; font-family: "Tajawal", "IBM Plex Sans Arabic", sans-serif; font-size: 14px; outline: none; }
+.page :global(.ai-chat-form input:focus) { border-color: #f0821e; box-shadow: 0 0 0 3px rgba(240,130,30,.13); }
+.page :global(.ai-chat-form button) { flex: none; width: 48px; height: 48px; border: 0; border-radius: 15px; background: linear-gradient(135deg, #f0821e, #d9600d); color: white; box-shadow: 0 5px 14px rgba(240,130,30,.22); }
+.page :global(.ai-chat-page-menu) { position: absolute; z-index: 20; top: 66px; left: 14px; width: min(280px, calc(100% - 28px)); display: grid; gap: 5px; padding: 10px; border: 1px solid #f0ddca; border-radius: 18px; background: #fff; box-shadow: 0 22px 55px rgba(31,41,55,.18); }
+.page :global(.ai-chat-page-menu button), .page :global(.ai-chat-page-menu a) { display: block; width: 100%; padding: 12px; border: 0; border-radius: 11px; background: transparent; color: #342920; font: 700 12px/1.6 "Tajawal", "IBM Plex Sans Arabic", sans-serif; text-align: right; text-decoration: none; cursor: pointer; }
+.page :global(.ai-chat-page-menu button:hover), .page :global(.ai-chat-page-menu a:hover) { background: #fff2e4; color: #a84c08; }
+@keyframes novatek-chat-appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 640px) {
+  .page :global(.ai-chat-page-head) { min-height: 66px; padding: 9px 12px; }
+  .page :global(.ai-chat-avatar) { width: 40px; height: 40px; border-radius: 13px; }
+  .page :global(.ai-chat-page-head .ai-chat-brand b) { font-size: 13px; }
+  .page :global(.ai-chat-suggestions) { padding: 9px 12px 8px; }
+  .page :global(.ai-chat-suggestion) { min-height: 35px; padding: 7px 11px; }
+  .page :global(.ai-chat-toolbar) { padding: 7px 12px; }
+  .page :global(.ai-chat-messages) { padding: 16px 12px; }
+  .page :global(.ai-msg) { max-width: 94%; padding: 10px 12px; font-size: 13px; }
+  .page :global(.ai-chat-form) { padding: 9px 10px max(10px, env(safe-area-inset-bottom)); gap: 7px; }
+  .page :global(.ai-chat-form input) { min-height: 44px; font-size: 13px; }
+  .page :global(.ai-chat-form button) { width: 44px; height: 44px; }
 }
