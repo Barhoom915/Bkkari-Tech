@@ -95,10 +95,19 @@ export async function POST(request: Request) {
      * البحث الخارجي يحصل فقط عندما المستخدم يطلب معلومة حديثة
      * أو بحثاً أو سعراً/عرضاً.
      */
+    const recentConversationText = messages.slice(-8).map(getMessageText).join("\n");
+    const laptopTopicPattern = /(لابتوب|لابتوبات|حاسوب|كمبيوتر|جهاز|مواصفات|معالج|كرت|بطارية|رام|تخزين|شاشة|ssd|nvme|gpu|cpu)/i;
+    const wantsToSeeProduct = /(وين\s*(بلاقي|بلاقيه|بشوف|شوف|بشوفه|بقدر شوف|موجود)|كيف\s*(بدي\s*)?(شوف|شوفه|بشوف|بلاقي)|فرجيني|ورجيني|عرض\s*(الجهاز|المنتج)|شوف\s*(الجهاز|هالجهاز)|وين\s*(الجهاز|المنتج))/i.test(last);
+    const previousLaptopRequest = [...messages.slice(0, -1)]
+      .reverse()
+      .find((message: any) => message?.role === "user" && laptopTopicPattern.test(getMessageText(message)));
     const laptopQuestion =
-      /(لابتوب|لابتوبات|حاسوب|كمبيوتر|جهاز|مواصفات|معالج|كرت|بطارية|رام|تخزين|شاشة|ssd|nvme|gpu|cpu)/i.test(
-        last
-      );
+      laptopTopicPattern.test(last) ||
+      (Boolean(previousLaptopRequest) && wantsToSeeProduct && laptopTopicPattern.test(recentConversationText));
+    const catalogQuery = laptopQuestion && !laptopTopicPattern.test(last) && previousLaptopRequest
+      ? getMessageText(previousLaptopRequest)
+      : last;
+    const productDisplayRequest = laptopQuestion && (wantsToSeeProduct || /(رشح|اقترح|فرجيني|اعرض|قارن|اختار|أنسب|مناسب|لابتوب|لابتوبات|جهاز|حاسوب|كمبيوتر)/i.test(last));
 
     if (laptopQuestion && wantsWebResearch(last)) {
       try {
@@ -215,9 +224,9 @@ ${sources
       }
     }
 
-    const budgetMatch = last.match(/(?:ميزانيتي|بحدود|حدود|أقل من|تحت|budget)[^0-9]{0,16}(\d{2,4})|(?:\$|usd)?\s*(\d{2,4})\s*(?:\$|دولار|usd)/i);
+    const budgetMatch = catalogQuery.match(/(?:ميزانيتي|بحدود|حدود|أقل من|تحت|budget)[^0-9]{0,16}(\d{2,4})|(?:\$|usd)?\s*(\d{2,4})\s*(?:\$|دولار|usd)/i);
     const budget = budgetMatch ? Number(budgetMatch[1] || budgetMatch[2]) : null;
-    const gamingQuestion = /(جيمنج|gaming|ألعاب|العاب|للعب|كرت شاشة قوي)/i.test(last);
+    const gamingQuestion = /(جيمنج|gaming|ألعاب|العاب|للعب|كرت شاشة قوي)/i.test(catalogQuery);
     const requestedTwoGb = /(2\s?gb|2\s?جيجا|2\s?غ\.?ب)/i.test(last);
     const queryWords = last.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((word) => word.length > 2);
     const rankedCatalogProducts = [...catalogProducts].sort((a, b) => {
@@ -267,7 +276,7 @@ ${sources
       usageProvider = result.provider;
       usageModel = result.model;
       await recordAiUsage({ userId: usageUserId, provider: usageProvider, model: usageModel, status: "success", latencyMs: Date.now() - usageStartedAt });
-      const products = laptopQuestion
+      const products = productDisplayRequest
         ? (gamingQuestion
             ? groundedProducts.filter((p) => /(gaming|جيمنج|rtx|gtx|rx\s?\d|quadro|p\d{3,4}|radeon|geforce)/i.test(`${p.name} ${p.category || ""} ${p.gpu || ""}`)).slice(0, 3)
             : groundedProducts.slice(0, 3))
