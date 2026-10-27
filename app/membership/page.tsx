@@ -25,6 +25,17 @@ const plans = [
 export default function MembershipPage() {
   return (
     <main dir="rtl" className="min-h-screen bg-slate-50 text-slate-900">
+      <section aria-labelledby="elite-trial-title" className="mx-auto max-w-5xl px-5 pt-8 sm:px-8 sm:pt-10">
+        <div className="rounded-2xl border border-orange-200 bg-white p-5 shadow-sm sm:p-7">
+          <p className="text-sm font-extrabold text-orange-600">عرض للحسابات الجديدة المؤهلة</p>
+          <h2 id="elite-trial-title" className="mt-2 text-2xl font-black sm:text-3xl">جرّب NOVATEK Elite مجاناً لمدة 7 أيام</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">استمتع بمزايا عضوية Elite لمدة 7 أيام مجاناً، ضمن فترة العرض وللحسابات الجديدة المؤهلة.</p>
+          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-800">
+            <input type="checkbox" name="elite-trial-terms-consent" className="mt-1 h-4 w-4 shrink-0 accent-orange-500" />
+            <span>أوافق على شروط العرض.</span>
+          </label>
+        </div>
+      </section>
       <section className="relative isolate overflow-hidden bg-slate-950 text-white">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_15%_50%,rgba(249,115,22,0.22),transparent_42%),radial-gradient(ellipse_at_85%_20%,rgba(37,99,235,0.18),transparent_35%)]" />
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
