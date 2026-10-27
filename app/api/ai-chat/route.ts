@@ -207,7 +207,7 @@ ${sources
           .gt("stock_quantity", 0)
           .order("is_featured", { ascending: false })
           .order("created_at", { ascending: false })
-          .limit(15);
+          .limit(100);
         if (error) throw error;
         catalogProducts = (data ?? []) as typeof catalogProducts;
       } catch (error) {
@@ -215,8 +215,27 @@ ${sources
       }
     }
 
+    const budgetMatch = last.match(/(?:ميزانيتي|بحدود|حدود|أقل من|تحت|budget)[^0-9]{0,16}(\\d{2,4})|(?:\\$|usd)?\\s*(\\d{2,4})\\s*(?:\\$|دولار|usd)/i);
+    const budget = budgetMatch ? Number(budgetMatch[1] || budgetMatch[2]) : null;
+    const gamingQuestion = /(جيمنج|gaming|ألعاب|العاب|للعب|كرت شاشة قوي)/i.test(last);
+    const requestedTwoGb = /(2\\s?gb|2\\s?جيجا|2\\s?غ\\.?ب)/i.test(last);
+    const queryWords = last.toLowerCase().split(/[^\\p{L}\\p{N}]+/u).filter((word) => word.length > 2);
+    const rankedCatalogProducts = [...catalogProducts].sort((a, b) => {
+      const score = (p: typeof catalogProducts[number]) => {
+        const haystack = `${p.name} ${p.brand || ""} ${p.model || ""} ${p.category || ""} ${p.cpu || ""} ${p.ram || ""} ${p.storage || ""} ${p.gpu || ""} ${p.description || ""}`.toLowerCase();
+        let value = queryWords.reduce((total, word) => total + (haystack.includes(word) ? 2 : 0), 0);
+        if (gamingQuestion && /(gaming|جيمنج|rtx|gtx|rx\\s?\\d|quadro|p\\d{3,4}|radeon|geforce)/i.test(haystack)) value += 5;
+        if (requestedTwoGb && /2\\s?gb|2\\s?جيجا|2\\s?غ\\.?ب/i.test(p.gpu || "")) value += 8;
+        if (budget !== null && budget > 0) value += p.price <= budget ? 4 : -Math.min(6, (p.price - budget) / budget * 6);
+        if (p.is_featured) value += 1;
+        return value;
+      };
+      return score(b) - score(a);
+    });
+    const groundedProducts = rankedCatalogProducts.slice(0, 12);
+
     const catalogContext = catalogProducts.length
-      ? `\n\nبيانات كتالوج NOVATEK الفعلية (المرجع الأساسي، لا تقترح أجهزة غير موجودة هنا):\n${catalogProducts.map((p, index) =>
+      ? `\n\nبيانات كتالوج NOVATEK الفعلية (المرجع الأساسي، لا تقترح أجهزة غير موجودة هنا):\n${groundedProducts.map((p, index) =>
           `${index + 1}. ${p.name} | الشركة: ${p.brand || "غير محدد"} | الموديل: ${p.model || "غير محدد"} | التصنيف: ${p.category || "غير محدد"} | السعر: ${p.price} | CPU: ${p.cpu || "غير مسجل"} | RAM: ${p.ram || "غير مسجل"} | التخزين: ${p.storage || "غير مسجل"} | GPU: ${p.gpu || "غير مسجل"} | الشاشة: ${p.screen_size || "غير مسجل"} | الحالة: ${p.condition || "غير مسجلة"} | الوصف: ${p.description || "لا يوجد"} | الميزات: ${Array.isArray(p.features) ? p.features.join(", ") : "لا توجد"}`
         ).join("\n")}\nإذا لم يوجد جهاز مناسب تماماً، وضّح ذلك ولا تخترع موديلات أو مواصفات. لا تصف كرت 2GB بأنه مناسب للألعاب الحديثة المتوسطة من دون توضيح حدوده، ولا تغيّر أي مواصفة مسجلة.`
       : laptopQuestion
@@ -248,11 +267,10 @@ ${sources
       usageProvider = result.provider;
       usageModel = result.model;
       await recordAiUsage({ userId: usageUserId, provider: usageProvider, model: usageModel, status: "success", latencyMs: Date.now() - usageStartedAt });
-      const gamingQuestion = /(جيمنج|gaming|ألعاب|العاب|للعب|كرت شاشة قوي)/i.test(last);
       const products = laptopQuestion
         ? (gamingQuestion
-            ? catalogProducts.filter((p) => /(gaming|جيمنج|rtx|gtx|rx\s?\d|quadro|p\d{3,4})/i.test(`${p.name} ${p.category || ""} ${p.gpu || ""}`)).slice(0, 3)
-            : catalogProducts.slice(0, 3))
+            ? groundedProducts.filter((p) => /(gaming|جيمنج|rtx|gtx|rx\s?\d|quadro|p\d{3,4}|radeon|geforce)/i.test(`${p.name} ${p.category || ""} ${p.gpu || ""}`)).slice(0, 3)
+            : groundedProducts.slice(0, 3))
         : [];
       return NextResponse.json(
         { reply: result.reply, usage: usage?.quota, products },
