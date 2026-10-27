@@ -238,7 +238,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
           maxLength={4000}
           disabled={loading}
         />
-        <button type="submit" disabled={loading || !input.trim()} aria-label="إرسال السؤال}>➤</button>
+        <button type="submit" disabled={loading || !input.trim()} aria-label="إرسال السؤال">➤</button>
       </form>
     </>
   );
