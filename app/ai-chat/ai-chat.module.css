@@ -204,3 +204,128 @@
   .page :global(.novatek-suggestion) { min-height:34px; padding:7px 11px; font-size:11px; }
   .page :global(.novatek-message-action) { width:30px; min-width:30px; height:30px; min-height:30px; }
 }
+
+
+/* NOVATEK light premium theme: white canvas, charcoal typography, orange accents */
+.page {
+  background: #f7f8fa;
+  color: #20242b;
+  --chat-orange: #f47716;
+  --chat-ink: #20242b;
+  --chat-muted: #68717e;
+  animation: novatek-page-reveal .5s cubic-bezier(.2,.75,.25,1) both;
+}
+.page :global(.ai-chat-embedded.ai-chat-page-shell) {
+  background:
+    radial-gradient(ellipse at 78% 8%, rgba(244,119,22,.075), transparent 34%),
+    linear-gradient(180deg, #fff 0%, #fbfbfc 100%);
+  color: var(--chat-ink);
+}
+.page :global(.ai-chat-page-head) {
+  position: relative;
+  z-index: 25;
+  min-height: 78px;
+  padding: 12px clamp(14px, 4vw, 42px);
+  background: rgba(255,255,255,.92);
+  border-bottom: 1px solid #eceef1;
+  box-shadow: 0 4px 24px rgba(24,31,42,.035);
+  backdrop-filter: blur(14px);
+}
+.page :global(.ai-chat-page-head .ai-chat-brand b) { color: #222831; letter-spacing: -.2px; }
+.page :global(.ai-chat-avatar) {
+  border: 1px solid #f4d7c0;
+  border-radius: 15px;
+  background: linear-gradient(145deg,#fff,#fff4e9);
+  box-shadow: 0 4px 14px rgba(244,119,22,.08);
+}
+.page :global(.ai-chat-head-actions) { display:flex; align-items:center; gap:9px; }
+.page :global(.ai-chat-home-link) {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  min-height:40px; padding:0 13px; border:1px solid #e6e8ec; border-radius:12px;
+  background:#fff; color:#424954; text-decoration:none; font:700 12px/1 "Tajawal","IBM Plex Sans Arabic",sans-serif;
+  transition:background .18s ease,border-color .18s ease,transform .18s ease,color .18s ease;
+}
+.page :global(.ai-chat-home-link svg), .page :global(.ai-chat-menu-toggle svg) {
+  width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;
+}
+.page :global(.ai-chat-home-link:hover) { border-color:#f7b27c; background:#fff7f0; color:#b84d08; transform:translateY(-1px); }
+.page :global(.ai-chat-menu-toggle) {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:42px; height:42px; border:1px solid #e6e8ec; border-radius:12px;
+  background:#fff; color:#303640; font-size:0; transition:background .18s ease,border-color .18s ease;
+}
+.page :global(.ai-chat-menu-toggle:hover) { border-color:#f7b27c; background:#fff7f0; }
+.page :global(.ai-chat-page-menu) {
+  top:66px; left:clamp(14px,4vw,42px); border-color:#e8eaee; border-radius:16px;
+  box-shadow:0 18px 48px rgba(25,32,42,.13); animation:novatek-menu-reveal .18s ease both;
+}
+.page :global(.ai-chat-page-menu button), .page :global(.ai-chat-page-menu a) { color:#333a44; }
+.page :global(.ai-chat-page-menu button:hover), .page :global(.ai-chat-page-menu a:hover) { background:#fff4e9; color:#b84d08; }
+.page :global(.ai-chat-toolbar) { padding:12px clamp(14px,4vw,42px); background:transparent; }
+.page :global(.ai-chat-tool-button) {
+  min-height:36px; padding:8px 12px; border:1px solid #e7e9ed; border-radius:11px;
+  background:#fff; color:#4b535e; font-size:12px; box-shadow:0 2px 7px rgba(20,26,36,.025);
+  transition:background .18s ease,border-color .18s ease,transform .18s ease;
+}
+.page :global(.ai-chat-tool-button:hover) { border-color:#f6bd91; background:#fff8f2; transform:translateY(-1px); }
+.page :global(.ai-chat-messages) {
+  background:transparent; padding:clamp(16px,3vw,34px) clamp(14px,8vw,110px);
+}
+.page :global(.novatek-message) { animation:novatek-message-arrive .28s cubic-bezier(.2,.75,.25,1) both; }
+.page :global(.ai-msg.assistant), .page :global(.novatek-message-assistant .novatek-message-content) {
+  color:#252a32; background:#fff; border:1px solid #e9ebef;
+  box-shadow:0 5px 18px rgba(27,34,44,.035);
+}
+.page :global(.ai-msg.user), .page :global(.novatek-message-user .novatek-message-content) {
+  color:#fff; background:linear-gradient(135deg,#f58220,#e9680c);
+  box-shadow:0 5px 16px rgba(233,104,12,.14);
+}
+.page :global(.novatek-message-avatar) { background:#fff2e6; border-color:#f7d7bd; color:#c45a0b; }
+.page :global(.ai-chat-suggestions) { padding:10px clamp(14px,4vw,42px) 16px; }
+.page :global(.novatek-suggestion) {
+  border-color:#e7e9ed; border-radius:12px; background:rgba(255,255,255,.92);
+  color:#3b424c; box-shadow:0 3px 12px rgba(25,32,42,.035);
+  transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.page :global(.novatek-suggestion:hover:not(:disabled)) {
+  border-color:#f4a66e; background:#fff7f0; color:#a84908;
+  box-shadow:0 6px 16px rgba(244,119,22,.09); transform:translateY(-2px);
+}
+.page :global(.ai-chat-form) {
+  border-top:1px solid #eceef1; background:rgba(255,255,255,.94);
+  box-shadow:0 -8px 28px rgba(30,36,46,.025); backdrop-filter:blur(12px);
+}
+.page :global(.ai-chat-form input) {
+  border-color:#e4e7ec; border-radius:16px; background:#fff; color:#252a32;
+  box-shadow:0 2px 8px rgba(20,26,36,.025); transition:border-color .18s ease,box-shadow .18s ease;
+}
+.page :global(.ai-chat-form input::placeholder) { color:#9299a4; }
+.page :global(.ai-chat-form input:focus) { border-color:#f4a66e; box-shadow:0 0 0 3px rgba(244,119,22,.1); }
+.page :global(.ai-chat-form button) { background:linear-gradient(135deg,#fa8a27,#eb690b); box-shadow:0 5px 13px rgba(233,104,12,.2); transition:transform .18s ease,box-shadow .18s ease; }
+.page :global(.ai-chat-form button:hover:not(:disabled)) { transform:translateY(-1px); box-shadow:0 8px 18px rgba(233,104,12,.24); }
+.page :global(.ai-chat-history-panel) {
+  border-color:#e7e9ed; background:#fff; box-shadow:0 18px 48px rgba(25,32,42,.12);
+  animation:novatek-menu-reveal .18s ease both;
+}
+.page :global(.ai-chat-history-item) { border-color:#eceef1; background:#fff; color:#333a44; }
+.page :global(.ai-chat-history-item:hover) { background:#fff7f0; border-color:#f6bd91; }
+.page :global(.ai-chat-message-actions button:hover:not(:disabled)),
+.page :global(.novatek-message-action:hover:not(:disabled)),
+.page :global(.novatek-message-action.selected) { border-color:#f7c49e; background:#fff4e9; color:#b84d08; }
+@keyframes novatek-page-reveal { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+@keyframes novatek-message-arrive { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@keyframes novatek-menu-reveal { from { opacity:0; transform:translateY(-5px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+@media (max-width:640px) {
+ .page :global(.ai-chat-page-head) { min-height:66px; padding:9px 12px; }
+ .page :global(.ai-chat-home-link) { min-height:38px; padding:0 10px; }
+ .page :global(.ai-chat-home-link span) { font-size:11px; }
+ .page :global(.ai-chat-head-actions) { gap:6px; }
+ .page :global(.ai-chat-menu-toggle) { width:38px; height:38px; }
+ .page :global(.ai-chat-toolbar) { padding:8px 12px; }
+ .page :global(.ai-chat-messages) { padding:14px 12px; }
+}
+@media (prefers-reduced-motion:reduce) {
+ .page, .page :global(.novatek-message), .page :global(.ai-chat-page-menu), .page :global(.ai-chat-history-panel) { animation:none !important; }
+ .page :global(.ai-chat-home-link), .page :global(.ai-chat-menu-toggle), .page :global(.ai-chat-tool-button),
+ .page :global(.novatek-suggestion), .page :global(.ai-chat-form input), .page :global(.ai-chat-form button) { transition:none !important; }
+}
