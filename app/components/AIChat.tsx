@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Suggestion, SuggestionList, SuggestionPanel, Suggestions } from "./ai-chat/suggestions";
+import { Suggestion, SuggestionList, Suggestions } from "./ai-chat/suggestions";
 import { Message, MessageActions, MessageAction, MessageAvatar, MessageBody, MessageContent, MessageThread, MessageTyping } from "./ai-chat/message-thread";
 
 type Product = {
@@ -27,6 +27,8 @@ const SUGGESTED_QUESTIONS = [
   { label: "لابتوب حسب ميزانيتي", question: "ساعدني اختار لابتوب مناسب حسب ميزانيتي واستخدامي." },
   { label: "لابتوب للألعاب", question: "فرجيني لابتوبات مناسبة للألعاب من أجهزة NOVATEK المتوفرة." },
   { label: "خدمات المتجر", question: "شو خدمات NOVATEK وكيف فيني أطلب؟" },
+  { label: "قارنلي بين جهازين", question: "ساعدني قارن بين لابتوبين من حيث الأداء والسعر والمواصفات." },
+  { label: "لابتوب للدراسة", question: "رشّحلي لابتوب مناسب للدراسة والبرمجة حسب الأجهزة المتوفرة عندكم." },
 ];
 
 const HISTORY_KEY = "novatek-ai-chat-history-v1";
@@ -43,7 +45,6 @@ function makeSession(messages: ChatMessage[], id: string): ChatSession {
 
 export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<ChatSession[]>([]);
@@ -224,18 +225,15 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   }
 
   const suggestions = messages.length === 1 && !loading ? (
-    <SuggestionPanel>
-      <p className="ai-chat-suggestions-title">ممكن نساعدك بـ</p>
-      <Suggestions>
-        <SuggestionList>
-          {SUGGESTED_QUESTIONS.map((item) => (
-            <Suggestion key={item.label} onClick={() => void sendMessage(item.question)} disabled={loading}>
-              {item.label}
-            </Suggestion>
-          ))}
-        </SuggestionList>
-      </Suggestions>
-    </SuggestionPanel>
+    <Suggestions className="ai-chat-suggestions">
+      <SuggestionList>
+        {SUGGESTED_QUESTIONS.map((item) => (
+          <Suggestion key={item.label} onClick={() => void sendMessage(item.question)} disabled={loading}>
+            {item.label}
+          </Suggestion>
+        ))}
+      </SuggestionList>
+    </Suggestions>
   ) : null;
 
   const messageList = (
@@ -250,12 +248,16 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
           </MessageBody>
           {m.role === "assistant" && i !== typingMessageIndex && (
             <MessageActions className="ai-chat-message-actions">
-              <MessageAction label="نسخ الرد" onClick={() => void copyAnswer(m.text, i)}>
-                {copiedMessageIndex === i ? "تم النسخ ✓" : "نسخ"}
+              <MessageAction label={copiedMessageIndex === i ? "تم النسخ" : "نسخ الرد"} className="message-action-copy" onClick={() => void copyAnswer(m.text, i)}>
+                {copiedMessageIndex === i ? "✓" : "▢"}
               </MessageAction>
-              <MessageAction label="الرد مفيد" className={feedbackByMessage[i] === "up" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "up" ? null : "up" }))}>👍</MessageAction>
-              <MessageAction label="الرد غير مفيد" className={feedbackByMessage[i] === "down" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "down" ? null : "down" }))}>👎</MessageAction>
-              {i === messages.length - 1 && <MessageAction label="إعادة الرد" onClick={() => void regenerateLastAnswer()} disabled={loading}>إعادة الرد ↻</MessageAction>}
+              <MessageAction label="الرد مفيد" className={feedbackByMessage[i] === "up" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "up" ? null : "up" }))}>
+                <span aria-hidden="true">👍</span>
+              </MessageAction>
+              <MessageAction label="الرد غير مفيد" className={feedbackByMessage[i] === "down" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "down" ? null : "down" }))}>
+                <span aria-hidden="true">👎</span>
+              </MessageAction>
+              {i === messages.length - 1 && <MessageAction label="إعادة الرد" onClick={() => void regenerateLastAnswer()} disabled={loading} className="message-action-regenerate"><span aria-hidden="true">↻</span></MessageAction>}
             </MessageActions>
           )}
           {m.role === "assistant" && m.products && m.products.length > 0 && (
@@ -324,15 +326,6 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
         </button>
       </div>
       {historyPanel}
-      {menuOpen && (
-        <div className="ai-chat-page-menu">
-          <button type="button" onClick={() => { setHistoryOpen(true); setMenuOpen(false); }}>🕘 سجل المحادثات</button>
-          <button type="button" onClick={() => { startNewChat(); setMenuOpen(false); }}>✨ محادثة جديدة</button>
-          <Link href="/laptops" onClick={() => setMenuOpen(false)}>💻 تصفّح اللابتوبات</Link>
-          <Link href="/services" onClick={() => setMenuOpen(false)}>🎮 الخدمات الرقمية</Link>
-          <Link href="/web-dev" onClick={() => setMenuOpen(false)}>🌐 تصميم وبرمجة المواقع</Link>
-        </div>
-      )}
       {messageList}
       {suggestions}
       <form onSubmit={send} className="ai-chat-form">
@@ -357,7 +350,6 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
             <span className="ai-chat-avatar"><img src="/brand/novatek-logo-transparent.png" alt="شعار NOVATEK" /></span>
             <div><b>مساعد NOVATEK ✨</b><small><span className="ai-chat-online-dot" /> نشط الآن</small></div>
           </div>
-          <button type="button" className="ai-chat-menu-toggle" onClick={() => setMenuOpen((v) => !v)} aria-label="فتح قائمة المساعد" aria-expanded={menuOpen}>☰</button>
         </div>
         {chat}
       </div>
