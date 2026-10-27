@@ -354,7 +354,15 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
             <span className="ai-chat-avatar"><img src="/brand/novatek-logo-transparent.png" alt="شعار NOVATEK" /></span>
             <div><b>مساعد NOVATEK ✨</b><small><span className="ai-chat-online-dot" /> نشط الآن</small></div>
           </div>
-          <button type="button" className="ai-chat-menu-toggle" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"} aria-expanded={menuOpen}>☰</button>
+          <div className="ai-chat-head-actions">
+            <Link href="/" className="ai-chat-home-link" aria-label="العودة إلى الصفحة الرئيسية" title="الصفحة الرئيسية">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9M9 20v-6h6v6"/></svg>
+              <span>الرئيسية</span>
+            </Link>
+            <button type="button" className="ai-chat-menu-toggle" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"} aria-expanded={menuOpen}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+          </div>
           {menuOpen && (
             <nav className="ai-chat-page-menu" aria-label="قائمة مساعد NOVATEK">
               <button type="button" onClick={() => { setHistoryOpen(true); setMenuOpen(false); }}>سجل المحادثات</button>
