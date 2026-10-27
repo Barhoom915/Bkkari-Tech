@@ -3,7 +3,6 @@ import { createClient as createServerClient, getServiceClient } from "@/app/lib/
 import { askGeminiWithMetadata } from "@/app/lib/intelligence/gemini";
 import { beginAiUsage, recordAiUsage } from "@/app/lib/intelligence/usage-ledger";
 import { readCache, writeCache } from "@/app/lib/intelligence/cache";
-import { researchLaptop } from "@/app/lib/intelligence/providers";
 import type { Laptop } from "@/app/lib/types";
 import type { ComparisonPreferences } from "@/app/lib/intelligence/types";
 
@@ -68,13 +67,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "تعذر تجهيز المقارنة حالياً. جرّب مرة ثانية لاحقاً." }, { status: 503 });
     }
     const service = getServiceClient();
+    const limit = 10;
+    if (ids.length !== 2) return NextResponse.json({ error: "اختار جهازين بالضبط." }, { status: 400 });
+    // Fast preflight only; the atomic database RPC below is the source of truth under concurrency.
     const { data: usageRow } = await service.from("comparison_usage").select("comparison_count,free_limit,reset_at").eq("user_id", userId).maybeSingle();
     const now = Date.now();
     let used = Number(usageRow?.comparison_count ?? 0);
     if (usageRow?.reset_at && new Date(usageRow.reset_at).getTime() <= now) used = 0;
-    const limit = 10;
     if (used >= limit) return NextResponse.json({ error: "وصلت للحد الشهري للمقارنات (10 مقارنات). بيتجدد رصيدك مع بداية الشهر الجاي.", quota: { used, remaining: 0, limit } }, { status: 429 });
-    if (ids.length !== 2) return NextResponse.json({ error: "اختار جهازين بالضبط." }, { status: 400 });
     const preferences = normalizePreferences(body.preferences);
 
     const { data, error } = await serverSupabase.from("laptops").select("*").in("id", ids);
@@ -84,8 +84,9 @@ export async function POST(request: Request) {
     const cacheKey = `comparison:${[...ids].sort((a: number, b: number) => a - b).join("-")}:${JSON.stringify(preferences)}`;
     const cached = await readCache(cacheKey, 86400);
     if (cached) {
-      const consumed = await consumeComparison(service, userId, used, limit);
+      const consumed = await consumeComparison(service, userId, limit);
       if (!consumed) return NextResponse.json({ error: "تعذر تحديث رصيد المقارنات. جرّب مرة ثانية." }, { status: 500 });
+      if (!consumed.allowed) return NextResponse.json({ error: "وصلت للحد الشهري للمقارنات (10 مقارنات). بيتجدد رصيدك مع بداية الشهر الجاي.", quota: consumed }, { status: 429 });
       return NextResponse.json({ ...cached.facts, sources: cached.sources, research: (cached.facts as any)?.research || [], cached: true, quota: consumed });
     }
 
@@ -119,24 +120,22 @@ export async function POST(request: Request) {
       });
     }
 
+    // Reserve a comparison only after validation and the shared AI quota check.
+    const comparisonQuota = await consumeComparison(service, userId, limit);
+    if (!comparisonQuota) return NextResponse.json({ error: "تعذر تحديث رصيد المقارنات. جرّب مرة ثانية." }, { status: 500 });
+    if (!comparisonQuota.allowed) return NextResponse.json({ error: "وصلت للحد الشهري للمقارنات (10 مقارنات). بيتجدد رصيدك مع بداية الشهر الجاي.", quota: comparisonQuota }, { status: 429 });
+
+    // Keep external research off the critical path: only reuse fresh cached research here.
+    // This avoids serial SerpApi/Tavily/PricesAPI waits for each comparison.
     const research = await Promise.all(laptops.map(async (l) => {
       const key = `laptop-research:${l.id}:${l.name}`;
       const hit = await readCache(key, 604800);
-      if (hit) return hit;
-      try {
-        const fresh = await researchLaptop(`${l.name} ${l.cpu || ""} ${l.gpu || ""} specifications review`);
-        const merged = { query: l.name, summary: fresh.map(x => x.summary).filter(Boolean).join("\n\n"), facts: {}, sources: fresh.flatMap(x => x.sources), prices: fresh.flatMap(x => x.prices || []), fetchedAt: new Date().toISOString() };
-        if (fresh.length) await writeCache(key, merged, 604800);
-        return merged;
-      } catch (error) {
-        console.error(`NOVATEK research error for laptop ${l.id}:`, error);
-        return { query: l.name, summary: "", facts: {}, sources: [], prices: [], fetchedAt: new Date().toISOString() };
-      }
+      return hit || { query: l.name, summary: "", facts: {}, sources: [], prices: [], fetchedAt: new Date().toISOString() };
     }));
 
     const localScores = laptops.map(l => ({ id: l.id, score: score(l, preferences) }));
-    const prompt = `قارن بين جهازي NOVATEK التاليين حسب تفضيلات المستخدم. لا تفترض أن الأغلى أفضل. استخدم المواصفات المحلية والمعلومات الخارجية. أرجع JSON فقط (بدون أي نص خارجه) وباختصار: reason جملتين كحد أقصى، categoryScores خمس فئات كحد أقصى، warnings اثنين كحد أقصى. الشكل: {"winnerId":number,"winnerScore":number,"reason":"string","categoryScores":[{"label":"string","left":number,"right":number}],"warnings":["string"]}. الأجهزة: ${JSON.stringify(laptops.map(l => ({ id:l.id,name:l.name,brand:l.brand,cpu:l.cpu,gpu:l.gpu,ram:l.ram,storage:l.storage,screen_size:l.screen_size,screen_resolution:l.screen_resolution,battery:l.battery_health,price:l.price })))}. التفضيلات: ${JSON.stringify(preferences)}. التقييم المحلي: ${JSON.stringify(localScores)}. المعلومات الخارجية: ${research.map(r=>({query:r.query,summary:r.summary,sources:r.sources,prices:r.prices})).map((item) => JSON.stringify(item)).join("\n")}`;
-    const aiResult = await askGeminiWithMetadata(prompt, [], { maxTokens: 2000, deadlineMs: 45000 });
+    const prompt = `قارن بين جهازي NOVATEK التاليين حسب تفضيلات المستخدم. لا تفترض أن الأغلى أفضل. استخدم المواصفات المحلية وأي معلومات خارجية مخزنة متاحة فقط، ولا تخترع معلومات ناقصة. أرجع JSON فقط (بدون أي نص خارجه) وباختصار: reason جملتين كحد أقصى، categoryScores خمس فئات كحد أقصى، warnings اثنين كحد أقصى. الشكل: {"winnerId":number,"winnerScore":number,"reason":"string","categoryScores":[{"label":"string","left":number,"right":number}],"warnings":["string"]}. الأجهزة: ${JSON.stringify(laptops.map(l => ({ id:l.id,name:l.name,brand:l.brand,cpu:l.cpu,gpu:l.gpu,ram:l.ram,storage:l.storage,screen_size:l.screen_size,screen_resolution:l.screen_resolution,battery:l.battery_health,price:l.price })))}. التفضيلات: ${JSON.stringify(preferences)}. التقييم المحلي: ${JSON.stringify(localScores)}. المعلومات الخارجية: ${research.map(r=>({query:r.query,summary:r.summary,sources:r.sources,prices:r.prices})).map((item) => JSON.stringify(item)).join("\n")}`;
+    const aiResult = await askGeminiWithMetadata(prompt, [], { maxTokens: 1000, deadlineMs: 14000, fastMode: true });
     await recordAiUsage({
       userId: usage.user?.id ?? userId,
       feature: "comparison",
@@ -172,29 +171,28 @@ export async function POST(request: Request) {
       research: research.map((r) => ({ query: r.query, summary: r.summary, facts: r.facts, sources: r.sources, prices: r.prices || [] })),
     };
     await writeCache(cacheKey, { query: cacheKey, summary: result.reason, facts: payload, sources: payload.sources, fetchedAt: new Date().toISOString() }, 86400);
-    const consumed = await consumeComparison(service, userId, used, limit);
-    if (!consumed) return NextResponse.json({ error: "تعذر تحديث رصيد المقارنات. جرّب مرة ثانية." }, { status: 500 });
-    return NextResponse.json({ ...payload, quota: consumed });
+    return NextResponse.json({ ...payload, quota: comparisonQuota });
   } catch (error) {
     console.error("NOVATEK comparison error:", error);
     return NextResponse.json({ error: "تعذر إجراء المقارنة حالياً. جرّب مرة ثانية." }, { status: 500 });
   }
 }
 
-async function consumeComparison(service: ReturnType<typeof getServiceClient>, userId: string, used: number, limit: number) {
-  const resetAt = new Date();
-  resetAt.setMonth(resetAt.getMonth() + 1, 1);
-  resetAt.setHours(0, 0, 0, 0);
-  const nextUsed = used + 1;
-  const { error } = await service.from("comparison_usage").upsert({
-    user_id: userId,
-    comparison_count: nextUsed,
-    free_limit: limit,
-    reset_at: resetAt.toISOString(),
-  }, { onConflict: "user_id" });
-  if (error) {
-    console.error("NOVATEK comparison quota error:", error);
+async function consumeComparison(service: ReturnType<typeof getServiceClient>, userId: string, limit: number) {
+  const { data, error } = await service.rpc("consume_comparison_quota", {
+    p_user_id: userId,
+    p_limit: limit,
+  });
+  if (error || !data || typeof data !== "object") {
+    console.error("NOVATEK atomic comparison quota error:", error);
     return null;
   }
-  return { used: nextUsed, remaining: Math.max(0, limit - nextUsed), limit };
+  const quota = data as { allowed?: boolean; used?: number; remaining?: number; limit?: number; resetAt?: string };
+  return {
+    allowed: quota.allowed === true,
+    used: Number(quota.used ?? 0),
+    remaining: Number(quota.remaining ?? 0),
+    limit: Number(quota.limit ?? limit),
+    resetAt: quota.resetAt,
+  };
 }
