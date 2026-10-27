@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "./lib/cart-context";
+import MembershipPromo from "./components/MembershipPromo";
 
 export const metadata: Metadata = {
   title: "NOVATEK | NOVATEK — كل احتياجاتك التقنية بمكان واحد",
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-full flex flex-col bg-[var(--bg-base)] text-ink antialiased"><script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem("novatek-theme");document.documentElement.classList.remove("dark");if(t==="dark")document.documentElement.classList.add("dark");}catch(e){}})()` }} />
-        <CartProvider>{children}</CartProvider>
+        <CartProvider><MembershipPromo />{children}</CartProvider>
       </body>
     </html>
   );
