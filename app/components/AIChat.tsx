@@ -19,6 +19,7 @@ type Product = {
 type ChatMessage = { role: "user" | "assistant"; text: string; products?: Product[] };
 type ChatSession = { id: string; title: string; updatedAt: number; messages: ChatMessage[] };
 type Feedback = "up" | "down" | null;
+type UsageInfo = { allowed?: boolean; reason?: string | null; dailyUsed?: number; dailyLimit?: number; monthlyUsed?: number; monthlyLimit?: number; dayResetsAt?: string; monthResetsAt?: string };
 
 const WELCOME_MESSAGE =
   "أهلاً فيك بـ NOVATEK 👋\nأنا مساعد المتجر، فيني ساعدك تختار لابتوب أو تتعرّف على خدماتنا. شو حابب تلاقي اليوم؟";
@@ -56,6 +57,8 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   const [typedText, setTypedText] = useState("");
   const [feedbackByMessage, setFeedbackByMessage] = useState<Record<number, Feedback>>({});
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
+  const [usageInfo, setUsageInfo] = useState<UsageInfo | null>(null);
+  const [quotaExhausted, setQuotaExhausted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentSessionId = useRef<string>(`${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
@@ -110,7 +113,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   async function sendMessage(rawText: string) {
     const text = rawText.trim();
-    if (!text || loading) return;
+    if (!text || loading || quotaExhausted) return;
     const next: ChatMessage[] = [...messages, { role: "user", text }];
     setMessages(next);
     setInput("");
@@ -125,8 +128,12 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
         body: JSON.stringify({ messages: next.slice(-25) }),
       });
 
-      let data: { reply?: string; products?: Product[] } = {};
+      let data: { reply?: string; products?: Product[]; usage?: UsageInfo } = {};
       try { data = await res.json(); } catch { /* safe fallback below */ }
+      if (data.usage) {
+        setUsageInfo(data.usage);
+        setQuotaExhausted(data.usage.allowed === false && (data.usage.reason === "daily_limit" || data.usage.reason === "monthly_limit"));
+      }
       const reply =
         typeof data.reply === "string" && data.reply.trim()
           ? data.reply.trim()
@@ -154,7 +161,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   }
 
   async function regenerateLastAnswer() {
-    if (loading || !messages.some((message) => message.role === "user")) return;
+    if (loading || quotaExhausted || !messages.some((message) => message.role === "user")) return;
     const lastUserIndex = messages.map((message) => message.role).lastIndexOf("user");
     const context = messages.slice(0, lastUserIndex + 1);
     setMessages(context);
@@ -166,8 +173,12 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: context.slice(-25) }),
       });
-      let data: { reply?: string; products?: Product[] } = {};
+      let data: { reply?: string; products?: Product[]; usage?: UsageInfo } = {};
       try { data = await res.json(); } catch { /* safe fallback below */ }
+      if (data.usage) {
+        setUsageInfo(data.usage);
+        setQuotaExhausted(data.usage.allowed === false && (data.usage.reason === "daily_limit" || data.usage.reason === "monthly_limit"));
+      }
       const reply = typeof data.reply === "string" && data.reply.trim()
         ? data.reply.trim()
         : !res.ok
@@ -215,6 +226,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
     setTypedText("");
     setMessages([{ role: "assistant", text: WELCOME_MESSAGE }]);
     setInput("");
+    setQuotaExhausted(false);
     setHistoryOpen(false);
     setMenuOpen(false);
   }
@@ -332,6 +344,27 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
       {historyPanel}
       {messageList}
       {suggestions}
+      {usageInfo && usageInfo.allowed !== false && typeof usageInfo.dailyUsed === "number" && typeof usageInfo.dailyLimit === "number" && (
+        <div className="ai-chat-usage-counter" role="status" aria-live="polite">
+          <span>استخدام المساعد اليوم</span>
+          <strong>{usageInfo.dailyUsed} / {usageInfo.dailyLimit} رسالة</strong>
+        </div>
+      )}
+      {quotaExhausted && (
+        <section className="ai-chat-membership-prompt" role="status" aria-live="polite">
+          <div className="ai-chat-membership-prompt-mark" aria-hidden="true">✦</div>
+          <div className="ai-chat-membership-prompt-copy">
+            <strong>وصلت للحد المجاني للمساعد الذكي</strong>
+            <p>اشترك لتكمل استخدام AI Chat وتستفيد من حدود أعلى حسب عضويتك.</p>
+            <div className="ai-chat-membership-plans">
+              <span><b>Plus</b> — $2.99 / شهر</span>
+              <span><b>Pro</b> — $4.99 / شهر</span>
+              <span><b>Elite</b> — $9.99 / شهر</span>
+            </div>
+            <Link href="/membership" className="ai-chat-membership-cta">اشترك لتكمل استخدام AI Chat <span aria-hidden="true">←</span></Link>
+          </div>
+        </section>
+      )}
       <form onSubmit={send} className="ai-chat-form">
         <input
           value={input}
@@ -339,9 +372,9 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
           placeholder="اسأل NOVATEK أي شي عن منتجاتنا وخدماتنا..."
           aria-label="اكتب سؤالك لمساعد NOVATEK"
           maxLength={4000}
-          disabled={loading}
+          disabled={loading || quotaExhausted}
         />
-        <button type="submit" disabled={loading || !input.trim()} aria-label="إرسال السؤال">➤</button>
+        <button type="submit" disabled={loading || quotaExhausted || !input.trim()} aria-label="إرسال السؤال">➤</button>
       </form>
     </>
   );
