@@ -47,7 +47,8 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", text: WELCOME_MESSAGE },
   ]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);\n  const currentSessionId = useRef<string>(`${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const currentSessionId = useRef<string>(`${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
   useEffect(() => {
     try {
@@ -129,7 +130,8 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   function startNewChat() {
     saveSession(messages);
-    currentSessionId.current = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;\n    setMessages([{ role: "assistant", text: WELCOME_MESSAGE }]);
+    currentSessionId.current = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setMessages([{ role: "assistant", text: WELCOME_MESSAGE }]);
     setInput("");
     setHistoryOpen(false);
   }
