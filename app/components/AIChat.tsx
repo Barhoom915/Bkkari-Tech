@@ -76,8 +76,10 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   async function send(e: FormEvent) {
     e.preventDefault();
-    await sendMessage(input);
+    const text = input;
+    if (!text.trim() || loading) return;
     setInput("");
+    await sendMessage(text);
   }
 
   const chatMessages = (
