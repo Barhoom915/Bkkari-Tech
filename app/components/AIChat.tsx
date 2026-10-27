@@ -39,8 +39,6 @@ function makeSession(messages: ChatMessage[], id: string): ChatSession {
 }
 
 export default function AIChat({ embedded = false }: { embedded?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -68,7 +66,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, loading, open, expanded, historyOpen, typedText]);
+  }, [messages, loading, historyOpen, typedText]);
 
   useEffect(() => {
     if (typingMessageIndex === null || !messages[typingMessageIndex]) {
