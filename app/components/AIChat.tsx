@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";\nimport Link from "next/link";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 type Product = {
   id: number;
