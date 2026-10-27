@@ -70,7 +70,8 @@ function getErrorBody(value: unknown): string {
 async function askAshna(
   input: string,
   history: ChatMessage[],
-  maxTokens = DEFAULT_MAX_TOKENS
+  maxTokens = DEFAULT_MAX_TOKENS,
+  timeoutMs = TIMEOUT_MS
 ): Promise<string | null> {
   const apiKey = process.env.ASHNA_API_KEY;
 
@@ -130,6 +131,7 @@ async function askAshna(
     console.error(
       "NOVATEK Ashna request failed:",
       getErrorBody(error)
+      , timeoutMs
     );
 
     return null;
@@ -139,7 +141,8 @@ async function askAshna(
 async function askGroq(
   input: string,
   history: ChatMessage[],
-  maxTokens = DEFAULT_MAX_TOKENS
+  maxTokens = DEFAULT_MAX_TOKENS,
+  timeoutMs = TIMEOUT_MS
 ): Promise<string | null> {
   const apiKey = process.env.GROQ_API_KEY;
 
@@ -198,6 +201,7 @@ async function askGroq(
     console.error(
       "NOVATEK Groq request failed:",
       getErrorBody(error)
+      , timeoutMs
     );
 
     return null;
@@ -207,7 +211,8 @@ async function askGroq(
 async function askOpenRouter(
   input: string,
   history: ChatMessage[],
-  maxTokens = DEFAULT_MAX_TOKENS
+  maxTokens = DEFAULT_MAX_TOKENS,
+  timeoutMs = TIMEOUT_MS
 ): Promise<string | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -269,6 +274,7 @@ async function askOpenRouter(
     console.error(
       "NOVATEK OpenRouter request failed:",
       getErrorBody(error)
+      , timeoutMs
     );
 
     return null;
@@ -278,7 +284,8 @@ async function askOpenRouter(
 async function askGeminiProvider(
   input: string,
   history: ChatMessage[],
-  maxTokens = DEFAULT_MAX_TOKENS
+  maxTokens = DEFAULT_MAX_TOKENS,
+  timeoutMs = TIMEOUT_MS
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -361,6 +368,7 @@ async function askGeminiProvider(
     console.error(
       "NOVATEK Gemini request failed:",
       getErrorBody(error)
+      , timeoutMs
     );
 
     return null;
@@ -387,11 +395,15 @@ export async function askGeminiWithMetadata(
   const deadlineMs = options.deadlineMs ?? DEFAULT_DEADLINE_MS;
   const startedAt = Date.now();
   const providers = [
-    { name: "Ashna", model: process.env.ASHNA_MODEL || "gpt-4o-mini", fn: () => askAshna(input, history, maxTokens) },
-    { name: "Groq", model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", fn: () => askGroq(input, history, maxTokens) },
-    { name: "OpenRouter", model: process.env.OPENROUTER_MODEL || "openrouter/free", fn: () => askOpenRouter(input, history, maxTokens) },
-    { name: "Gemini", model: process.env.GEMINI_MODEL || "gemini-3.8-flash", fn: () => askGeminiProvider(input, history, maxTokens) },
+    { name: "Ashna", model: process.env.ASHNA_MODEL || "gpt-4o-mini", fn: (timeoutMs = TIMEOUT_MS) => askAshna(input, history, maxTokens, timeoutMs) },
+    { name: "Groq", model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", fn: (timeoutMs = TIMEOUT_MS) => askGroq(input, history, maxTokens, timeoutMs) },
+    { name: "OpenRouter", model: process.env.OPENROUTER_MODEL || "openrouter/free", fn: (timeoutMs = TIMEOUT_MS) => askOpenRouter(input, history, maxTokens, timeoutMs) },
+    { name: "Gemini", model: process.env.GEMINI_MODEL || "gemini-3.8-flash", fn: (timeoutMs = TIMEOUT_MS) => askGeminiProvider(input, history, maxTokens, timeoutMs) },
   ];
+  if (options.fastMode) {
+    const priority = ["Groq", "Gemini", "Ashna", "OpenRouter"];
+    providers.sort((a, b) => priority.indexOf(a.name) - priority.indexOf(b.name));
+  }
   if (options.fastMode) {
     const priority = ["Groq", "Gemini", "Ashna", "OpenRouter"];
     providers.sort((a, b) => priority.indexOf(a.name) - priority.indexOf(b.name));
@@ -403,7 +415,7 @@ export async function askGeminiWithMetadata(
       break;
     }
     try {
-      const reply = await provider.fn();
+      const reply = await provider.fn(options.fastMode ? 6500 : TIMEOUT_MS);
       if (reply) {
         console.log(`NOVATEK AI provider: ${provider.name}`);
         return { reply, provider: provider.name.toLowerCase(), model: provider.model };
