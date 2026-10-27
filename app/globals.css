@@ -3939,3 +3939,30 @@ html.dark .novatek-product-transition-media img{filter:drop-shadow(0 18px 42px r
  .ai-chat-message-row,.ai-thinking-dots i,.ai-chat-fab{animation:none!important}
  .ai-chat-panel,.ai-chat-suggestion,.ai-chat-form button,.ai-chat-product-image img{transition:none!important}
 }
+
+
+/* NOVATEK AI Chat v3 — orange identity, clearer reading and in-page expanded window */
+.ai-chat-panel,.ai-chat-embedded{font-family:"Tajawal","Noto Sans Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif}
+.ai-chat-panel.is-expanded{position:fixed!important;inset:12px!important;left:12px!important;bottom:12px!important;width:auto!important;height:auto!important;max-height:none!important;border:1px solid rgba(240,130,30,.32);border-radius:24px;box-shadow:0 0 0 9999px rgba(8,15,28,.58),0 30px 100px rgba(8,15,28,.38);z-index:10000}
+.ai-chat-head{background:linear-gradient(110deg,#fff8ef 0%,#fff 68%);border-bottom-color:#f4dfcb}
+.ai-chat-head b{color:#a84c08}
+.ai-chat-head-actions button:hover,.ai-chat-history-heading button:hover{border-color:#f0821e;color:#b45309;background:#fff4e8}
+.ai-chat-tool-button:hover{border-color:#f0821e;color:#b45309;background:#fff4e8}
+.ai-chat-suggestion{border-color:#f1d8c0;background:#fffaf5;color:#853d0b}
+.ai-chat-suggestion:hover:not(:disabled){border-color:#f0821e;background:#fff0df;box-shadow:0 7px 18px rgba(240,130,30,.15)}
+.ai-chat-messages{background:#fffaf5}
+.ai-msg{font-size:13px;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere}
+.ai-msg.assistant{border-color:#f2e4d7;background:#fff;color:#28221e;border-radius:6px 18px 18px 18px}
+.ai-msg.user{background:linear-gradient(135deg,#f0821e,#d9600d);border-radius:18px 6px 18px 18px}
+.ai-msg.ai-thinking{background:#fff7ee;border-color:#f4dfcb}
+.ai-thinking-dots i{background:#f0821e}
+.ai-chat-form{background:#fff;border-top-color:#f2e4d7}
+.ai-chat-form input:focus{border-color:#f0821e;box-shadow:0 0 0 3px rgba(240,130,30,.13)}
+.ai-chat-form button{background:linear-gradient(135deg,#f0821e,#d9600d);box-shadow:0 5px 14px rgba(240,130,30,.22)}
+.ai-chat-product-card{border-color:#f0dfcf}
+.ai-chat-product-info>b{color:#b45309}
+.ai-chat-product-action{background:#fff0df;color:#a84c08}
+.ai-chat-product-action:hover{background:#f0821e;color:#fff}
+.ai-chat-fab{background:linear-gradient(135deg,#f0821e,#d9600d);box-shadow:0 12px 28px rgba(240,130,30,.27)}
+@media(max-width:640px){.ai-chat-panel.is-expanded{inset:5px!important;left:5px!important;bottom:5px!important;border-radius:18px}}
+@media(prefers-reduced-motion:reduce){.ai-chat-panel.is-expanded{transition:none!important}}
