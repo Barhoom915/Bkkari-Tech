@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Suggestion, SuggestionList, SuggestionPanel, Suggestions } from "./ai-chat/suggestions";
+import { Message, MessageActions, MessageAction, MessageAvatar, MessageBody, MessageContent, MessageThread, MessageTyping } from "./ai-chat/message-thread";
 
 type Product = {
   id: number;
@@ -222,34 +224,39 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   }
 
   const suggestions = messages.length === 1 && !loading ? (
-    <section className="ai-chat-suggestions" aria-label="أسئلة مقترحة">
+    <SuggestionPanel>
       <p className="ai-chat-suggestions-title">ممكن نساعدك بـ</p>
-      <div className="ai-chat-suggestion-list">
-        {SUGGESTED_QUESTIONS.map((item) => (
-          <button
-            type="button"
-            className="ai-chat-suggestion"
-            key={item.label}
-            onClick={() => void sendMessage(item.question)}
-            disabled={loading}
-          >{item.label}</button>
-        ))}
-      </div>
-    </section>
+      <Suggestions>
+        <SuggestionList>
+          {SUGGESTED_QUESTIONS.map((item) => (
+            <Suggestion key={item.label} onClick={() => void sendMessage(item.question)} disabled={loading}>
+              {item.label}
+            </Suggestion>
+          ))}
+        </SuggestionList>
+      </Suggestions>
+    </SuggestionPanel>
   ) : null;
 
   const messageList = (
-    <div className="ai-chat-messages" aria-live="polite" aria-relevant="additions text">
+    <MessageThread className="ai-chat-messages">
       {messages.map((m, i) => (
-        <div key={i} className={`ai-chat-message-row ${m.role}`}>
-          <div className={`ai-msg ${m.role}`} dir="auto">{m.role === "assistant" && i === typingMessageIndex ? typedText : m.text}</div>
+        <Message key={i} role={m.role} className="ai-chat-message-row">
+          <MessageBody>
+            {m.role === "assistant" && <MessageAvatar> N </MessageAvatar>}
+            <MessageContent className={`ai-msg ${m.role}`}>
+              {m.role === "assistant" && i === typingMessageIndex ? typedText : m.text}
+            </MessageContent>
+          </MessageBody>
           {m.role === "assistant" && i !== typingMessageIndex && (
-            <div className="ai-chat-message-actions" aria-label="أدوات الرد">
-              <button type="button" onClick={() => void copyAnswer(m.text, i)} aria-label="نسخ الرد" title="نسخ الرد">{copiedMessageIndex === i ? "تم النسخ ✓" : "نسخ ↗"}</button>
-              <button type="button" aria-label="الرد مفيد" aria-pressed={feedbackByMessage[i] === "up"} className={feedbackByMessage[i] === "up" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "up" ? null : "up" }))} title="رد مفيد">👍</button>
-              <button type="button" aria-label="الرد غير مفيد" aria-pressed={feedbackByMessage[i] === "down"} className={feedbackByMessage[i] === "down" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "down" ? null : "down" }))} title="رد غير مفيد">👎</button>
-              {i === messages.length - 1 && <button type="button" onClick={() => void regenerateLastAnswer()} disabled={loading} title="إعادة المحاولة">إعادة الرد ↻</button>}
-            </div>
+            <MessageActions className="ai-chat-message-actions">
+              <MessageAction label="نسخ الرد" onClick={() => void copyAnswer(m.text, i)}>
+                {copiedMessageIndex === i ? "تم النسخ ✓" : "نسخ"}
+              </MessageAction>
+              <MessageAction label="الرد مفيد" className={feedbackByMessage[i] === "up" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "up" ? null : "up" }))}>👍</MessageAction>
+              <MessageAction label="الرد غير مفيد" className={feedbackByMessage[i] === "down" ? "selected" : ""} onClick={() => setFeedbackByMessage((current) => ({ ...current, [i]: current[i] === "down" ? null : "down" }))}>👎</MessageAction>
+              {i === messages.length - 1 && <MessageAction label="إعادة الرد" onClick={() => void regenerateLastAnswer()} disabled={loading}>إعادة الرد ↻</MessageAction>}
+            </MessageActions>
           )}
           {m.role === "assistant" && m.products && m.products.length > 0 && (
             <div className="ai-chat-product-list" aria-label="أجهزة من متجر NOVATEK">
@@ -270,18 +277,18 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
               ))}
             </div>
           )}
-        </div>
+        </Message>
       ))}
       {loading && (
-        <div className="ai-chat-message-row assistant">
-          <div className="ai-msg assistant ai-thinking" role="status" aria-label="المساعد يفكر">
-            <span className="ai-thinking-dots"><i /><i /><i /></span>
-            <span>عم فكّر بالأنسب إلك</span>
-          </div>
-        </div>
+        <Message role="assistant" className="ai-chat-message-row">
+          <MessageBody>
+            <MessageAvatar>N</MessageAvatar>
+            <MessageTyping label="عم حضّر الرد" />
+          </MessageBody>
+        </Message>
       )}
       <div ref={messagesEndRef} />
-    </div>
+    </MessageThread>
   );
 
   const historyPanel = historyOpen ? (
