@@ -84,3 +84,10 @@
   .page :global(.ai-chat-form input) { min-height: 44px; font-size: 13px; }
   .page :global(.ai-chat-form button) { width: 44px; height: 44px; }
 }
+
+/* NOVATEK message actions — orange/black/white brand */
+.page :global(.ai-chat-message-actions) { display:flex; flex-wrap:wrap; align-items:center; gap:6px; width:fit-content; max-width:100%; margin:6px 0 0 auto; }
+.page :global(.ai-chat-message-actions button) { min-height:30px; padding:5px 10px; border:1px solid #ead9c9; border-radius:999px; background:#fff; color:#5b5148; font:600 11px/1.4 "Tajawal", "IBM Plex Sans Arabic", sans-serif; cursor:pointer; transition:background .16s ease,border-color .16s ease,color .16s ease; }
+.page :global(.ai-chat-message-actions button:hover:not(:disabled)), .page :global(.ai-chat-message-actions button.selected) { border-color:#f0821e; background:#fff0df; color:#a84c08; }
+.page :global(.ai-chat-message-actions button:disabled) { cursor:not-allowed; opacity:.55; }
+@media (prefers-reduced-motion: reduce) { .page :global(.ai-chat-message-actions button) { transition:none; } }
