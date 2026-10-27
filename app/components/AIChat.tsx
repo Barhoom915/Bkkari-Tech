@@ -27,10 +27,10 @@ const SUGGESTED_QUESTIONS = [
 
 const HISTORY_KEY = "novatek-ai-chat-history-v1";
 
-function makeSession(messages: ChatMessage[]): ChatSession {
+function makeSession(messages: ChatMessage[], id: string): ChatSession {
   const firstQuestion = messages.find((m) => m.role === "user")?.text || "محادثة جديدة";
   return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id,
     title: firstQuestion.length > 38 ? `${firstQuestion.slice(0, 38)}…` : firstQuestion,
     updatedAt: Date.now(),
     messages,
@@ -47,7 +47,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", text: WELCOME_MESSAGE },
   ]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);\n  const currentSessionId = useRef<string>(`${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
   useEffect(() => {
     try {
@@ -67,9 +67,9 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   function saveSession(nextMessages: ChatMessage[]) {
     if (!nextMessages.some((m) => m.role === "user")) return;
-    const session = makeSession(nextMessages);
+    const session = makeSession(nextMessages, currentSessionId.current);
     setHistory((current) => {
-      const next = [session, ...current].slice(0, 30);
+      const next = [session, ...current.filter((item) => item.id !== session.id)].slice(0, 30);
       try {
         window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
       } catch {
@@ -129,7 +129,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   function startNewChat() {
     saveSession(messages);
-    setMessages([{ role: "assistant", text: WELCOME_MESSAGE }]);
+    currentSessionId.current = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;\n    setMessages([{ role: "assistant", text: WELCOME_MESSAGE }]);
     setInput("");
     setHistoryOpen(false);
   }
