@@ -247,7 +247,6 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   const chat = (
     <>
-      {suggestions}
       <div className="ai-chat-toolbar">
         <button type="button" className="ai-chat-tool-button" onClick={() => setHistoryOpen((v) => !v)} aria-expanded={historyOpen}>
           <span aria-hidden="true">◷</span> سجل محادثات
@@ -278,6 +277,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
         />
         <button type="submit" disabled={loading || !input.trim()} aria-label="إرسال السؤال">➤</button>
       </form>
+      {suggestions}
     </>
   );
 
