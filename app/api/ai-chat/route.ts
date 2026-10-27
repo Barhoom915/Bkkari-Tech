@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient as createServerClient } from "@/app/lib/supabase-server";
 import { askGeminiWithMetadata } from "@/app/lib/intelligence/gemini";
 import { beginAiUsage, recordAiUsage } from "@/app/lib/intelligence/usage-ledger";
 import { researchLaptop } from "@/app/lib/intelligence/providers";
@@ -213,7 +214,30 @@ ${sources
       usageProvider = result.provider;
       usageModel = result.model;
       await recordAiUsage({ userId: usageUserId, provider: usageProvider, model: usageModel, status: "success", latencyMs: Date.now() - usageStartedAt });
-      return NextResponse.json({ reply: result.reply, usage: usage?.quota }, { headers: { "Cache-Control": "no-store" } });
+      let products: Array<{
+        id: number; name: string; brand: string | null; price: number;
+        cpu: string | null; ram: string | null; storage: string | null;
+        gpu: string | null; images: string[] | null;
+      }> = [];
+      if (laptopQuestion) {
+        try {
+          const supabase = await createServerClient();
+          const { data } = await supabase
+            .from("laptops")
+            .select("id,name,brand,price,cpu,ram,storage,gpu,images")
+            .eq("is_available", true)
+            .gt("stock_quantity", 0)
+            .order("created_at", { ascending: false })
+            .limit(3);
+          products = (data ?? []) as typeof products;
+        } catch (error) {
+          console.error("NOVATEK AI product cards unavailable:", error instanceof Error ? error.message : "unknown");
+        }
+      }
+      return NextResponse.json(
+        { reply: result.reply, usage: usage?.quota, products },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     await recordAiUsage({ userId: usageUserId, provider: "fallback_chain", status: "failed", latencyMs: Date.now() - usageStartedAt, errorCode: "all_providers_unavailable" });
