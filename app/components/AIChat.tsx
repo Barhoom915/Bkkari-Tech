@@ -45,6 +45,7 @@ function makeSession(messages: ChatMessage[], id: string): ChatSession {
 
 export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<ChatSession[]>([]);
@@ -114,6 +115,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
     setMessages(next);
     setInput("");
     setHistoryOpen(false);
+    setMenuOpen(false);
     setLoading(true);
 
     try {
@@ -214,6 +216,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
     setMessages([{ role: "assistant", text: WELCOME_MESSAGE }]);
     setInput("");
     setHistoryOpen(false);
+    setMenuOpen(false);
   }
 
   function restoreSession(session: ChatSession) {
@@ -222,6 +225,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
     setTypedText("");
     setMessages(session.messages);
     setHistoryOpen(false);
+    setMenuOpen(false);
   }
 
   const suggestions = messages.length === 1 && !loading ? (
@@ -350,6 +354,13 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
             <span className="ai-chat-avatar"><img src="/brand/novatek-logo-transparent.png" alt="شعار NOVATEK" /></span>
             <div><b>مساعد NOVATEK ✨</b><small><span className="ai-chat-online-dot" /> نشط الآن</small></div>
           </div>
+          <button type="button" className="ai-chat-menu-toggle" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"} aria-expanded={menuOpen}>☰</button>
+          {menuOpen && (
+            <nav className="ai-chat-page-menu" aria-label="قائمة مساعد NOVATEK">
+              <button type="button" onClick={() => { setHistoryOpen(true); setMenuOpen(false); }}>سجل المحادثات</button>
+              <button type="button" onClick={startNewChat}>محادثة جديدة</button>
+            </nav>
+          )}
         </div>
         {chat}
       </div>
