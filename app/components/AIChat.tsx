@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";\nimport Link from "next/link";
 
 type Product = {
   id: number;
@@ -40,7 +40,7 @@ function makeSession(messages: ChatMessage[], id: string): ChatSession {
 export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);\n  const [menuOpen, setMenuOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<ChatSession[]>([]);
@@ -247,6 +247,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   const chat = (
     <>
+      {suggestions}
       <div className="ai-chat-toolbar">
         <button type="button" className="ai-chat-tool-button" onClick={() => setHistoryOpen((v) => !v)} aria-expanded={historyOpen}>
           <span aria-hidden="true">◷</span> سجل محادثات
@@ -256,7 +257,15 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
         </button>
       </div>
       {historyPanel}
-      {suggestions}
+      {menuOpen && (
+        <div className="ai-chat-page-menu">
+          <button type="button" onClick={() => { setHistoryOpen(true); setMenuOpen(false); }}>🕘 سجل المحادثات</button>
+          <button type="button" onClick={() => { startNewChat(); setMenuOpen(false); }}>✨ محادثة جديدة</button>
+          <Link href="/laptops" onClick={() => setMenuOpen(false)}>💻 تصفّح اللابتوبات</Link>
+          <Link href="/services" onClick={() => setMenuOpen(false)}>🎮 الخدمات الرقمية</Link>
+          <Link href="/web-dev" onClick={() => setMenuOpen(false)}>🌐 تصميم وبرمجة المواقع</Link>
+        </div>
+      )}
       {messageList}
       <form onSubmit={send} className="ai-chat-form">
         <input
@@ -274,9 +283,13 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   if (embedded) {
     return (
-      <div className="ai-chat-embedded" dir="rtl">
-        <div className="ai-chat-head">
-          <div className="ai-chat-brand"><span className="ai-chat-online-dot" /><div><b>مساعد NOVATEK</b><small>جاهز يساعدك تختار</small></div></div>
+      <div className="ai-chat-embedded ai-chat-page-shell" dir="rtl">
+        <div className="ai-chat-head ai-chat-page-head">
+          <div className="ai-chat-brand">
+            <span className="ai-chat-avatar"><img src="/brand/novatek-logo-transparent.png" alt="NOVATEK AI" /></span>
+            <div><b>مساعد NOVATEK الذكي ✨</b><small><span className="ai-chat-online-dot" /> نشط الآن</small></div>
+          </div>
+          <button type="button" className="ai-chat-menu-toggle" onClick={() => setMenuOpen((v) => !v)} aria-label="فتح قائمة المساعد" aria-expanded={menuOpen}>☰</button>
         </div>
         {chat}
       </div>
@@ -284,22 +297,8 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <>
-      {open && (
-        <div className={`ai-chat-panel ${expanded ? "is-expanded" : ""}`} dir="rtl">
-          <div className="ai-chat-head">
-            <div className="ai-chat-brand"><span className="ai-chat-online-dot" /><div><b>مساعد NOVATEK</b><small>منتجات وخدمات المتجر</small></div></div>
-            <div className="ai-chat-head-actions">
-              <button type="button" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? "تصغير نافذة المحادثة" : "تكبير المحادثة للشاشة كاملة"} title={expanded ? "تصغير" : "تكبير"}>{expanded ? "↙" : "⛶"}</button>
-              <button type="button" onClick={() => { setOpen(false); setExpanded(false); }} aria-label="إغلاق المحادثة">×</button>
-            </div>
-          </div>
-          {chat}
-        </div>
-      )}
-      <button className="ai-chat-fab" onClick={() => setOpen((v) => !v)} aria-label={open ? "إغلاق محادثة الذكاء الاصطناعي" : "محادثة مع الذكاء الاصطناعي"} aria-expanded={open}>
-        <span>✦</span>
-      </button>
-    </>
+    <Link className="ai-chat-fab" href="/ai-chat" aria-label="افتح مساعد NOVATEK الذكي">
+      <span>✨</span>
+    </Link>
   );
 }
