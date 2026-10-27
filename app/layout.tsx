@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "./lib/cart-context";
+import MembershipPromo from "./components/MembershipPromo";
 
 export const metadata: Metadata = {
   title: "NOVATEK | NOVATEK — كل احتياجاتك التقنية بمكان واحد",
@@ -16,12 +17,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Tajawal:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
       <body className="min-h-full flex flex-col bg-[var(--bg-base)] text-ink antialiased"><script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem("novatek-theme");document.documentElement.classList.remove("dark");if(t==="dark")document.documentElement.classList.add("dark");}catch(e){}})()` }} />
-        <CartProvider>{children}</CartProvider>
+        <CartProvider><MembershipPromo />{children}</CartProvider>
       </body>
     </html>
   );
