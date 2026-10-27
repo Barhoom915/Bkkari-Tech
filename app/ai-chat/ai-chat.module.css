@@ -127,3 +127,80 @@
  .page :global(.novatek-suggestion) { transition:none; }
  .page :global(.novatek-typing-dots i) { animation:none; }
 }
+
+
+/* Requested compact suggestion chips and icon-only reply actions */
+.page :global(.ai-chat-suggestions) {
+  flex:none;
+  max-height:22dvh;
+  overflow-y:auto;
+  padding:10px clamp(14px,4vw,42px) 14px;
+  border:0;
+  background:transparent;
+}
+.page :global(.ai-chat-suggestion-list), .page :global(.novatek-suggestion-list) {
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+.page :global(.novatek-suggestion) {
+  width:auto;
+  min-height:36px;
+  padding:8px 14px;
+  border:1px solid #e7e5e4;
+  border-radius:12px;
+  background:#fff;
+  color:#34302d;
+  box-shadow:0 2px 7px rgba(25,25,25,.04);
+  font-size:12px;
+  font-weight:600;
+}
+.page :global(.novatek-suggestion:hover:not(:disabled)) {
+  border-color:#f0821e;
+  background:#fff7ed;
+  color:#9a4708;
+}
+.page :global(.novatek-message-actions) {
+  width:fit-content;
+  max-width:calc(100% - 36px);
+  margin:7px auto 0 0;
+  justify-content:flex-start;
+  gap:5px;
+}
+.page :global(.novatek-message-action) {
+  display:inline-flex;
+  width:32px;
+  min-width:32px;
+  height:32px;
+  min-height:32px;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  border-color:transparent;
+  border-radius:10px;
+  background:transparent;
+  color:#78716c;
+  font-size:15px;
+  line-height:1;
+}
+.page :global(.novatek-message-action:hover:not(:disabled)),
+.page :global(.novatek-message-action.selected) {
+  border-color:#fed7aa;
+  background:#fff0df;
+  color:#a84c08;
+}
+.page :global(.novatek-message-action.message-action-regenerate) {
+  width:auto;
+  min-width:32px;
+  padding:0 9px;
+  font-size:18px;
+}
+.page :global(.novatek-message-action.message-action-copy) { font-size:18px; }
+@media (max-width:640px) {
+  .page :global(.ai-chat-suggestions) { max-height:20dvh; padding:8px 10px 10px; }
+  .page :global(.novatek-suggestion) { min-height:34px; padding:7px 11px; font-size:11px; }
+  .page :global(.novatek-message-action) { width:30px; min-width:30px; height:30px; min-height:30px; }
+}
