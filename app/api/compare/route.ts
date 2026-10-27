@@ -3,7 +3,6 @@ import { createClient as createServerClient, getServiceClient } from "@/app/lib/
 import { askGeminiWithMetadata } from "@/app/lib/intelligence/gemini";
 import { beginAiUsage, recordAiUsage } from "@/app/lib/intelligence/usage-ledger";
 import { readCache, writeCache } from "@/app/lib/intelligence/cache";
-import { researchLaptop } from "@/app/lib/intelligence/providers";
 import type { Laptop } from "@/app/lib/types";
 import type { ComparisonPreferences } from "@/app/lib/intelligence/types";
 
