@@ -41,7 +41,8 @@ function makeSession(messages: ChatMessage[], id: string): ChatSession {
 export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);\n  const [menuOpen, setMenuOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<ChatSession[]>([]);
