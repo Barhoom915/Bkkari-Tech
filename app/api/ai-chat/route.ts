@@ -195,14 +195,14 @@ ${sources
       category: string | null; price: number; cpu: string | null; ram: string | null;
       storage: string | null; gpu: string | null; screen_size: string | null;
       condition: string | null; description: string | null; features: string[] | null;
-      images: string[] | null; stock_quantity: number;
+      images: string[] | null; stock_quantity: number; is_featured: boolean;
     }> = [];
     if (laptopQuestion) {
       try {
         const supabase = await createServerClient();
         const { data, error } = await supabase
           .from("laptops")
-          .select("id,name,brand,model,category,price,cpu,ram,storage,gpu,screen_size,condition,description,features,images,stock_quantity")
+          .select("id,name,brand,model,category,price,cpu,ram,storage,gpu,screen_size,condition,description,features,images,stock_quantity,is_featured")
           .eq("is_available", true)
           .gt("stock_quantity", 0)
           .order("is_featured", { ascending: false })
@@ -215,17 +215,17 @@ ${sources
       }
     }
 
-    const budgetMatch = last.match(/(?:ميزانيتي|بحدود|حدود|أقل من|تحت|budget)[^0-9]{0,16}(\\d{2,4})|(?:\\$|usd)?\\s*(\\d{2,4})\\s*(?:\\$|دولار|usd)/i);
+    const budgetMatch = last.match(/(?:ميزانيتي|بحدود|حدود|أقل من|تحت|budget)[^0-9]{0,16}(\d{2,4})|(?:\$|usd)?\s*(\d{2,4})\s*(?:\$|دولار|usd)/i);
     const budget = budgetMatch ? Number(budgetMatch[1] || budgetMatch[2]) : null;
     const gamingQuestion = /(جيمنج|gaming|ألعاب|العاب|للعب|كرت شاشة قوي)/i.test(last);
-    const requestedTwoGb = /(2\\s?gb|2\\s?جيجا|2\\s?غ\\.?ب)/i.test(last);
-    const queryWords = last.toLowerCase().split(/[^\\p{L}\\p{N}]+/u).filter((word) => word.length > 2);
+    const requestedTwoGb = /(2\s?gb|2\s?جيجا|2\s?غ\.?ب)/i.test(last);
+    const queryWords = last.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((word) => word.length > 2);
     const rankedCatalogProducts = [...catalogProducts].sort((a, b) => {
       const score = (p: typeof catalogProducts[number]) => {
         const haystack = `${p.name} ${p.brand || ""} ${p.model || ""} ${p.category || ""} ${p.cpu || ""} ${p.ram || ""} ${p.storage || ""} ${p.gpu || ""} ${p.description || ""}`.toLowerCase();
         let value = queryWords.reduce((total, word) => total + (haystack.includes(word) ? 2 : 0), 0);
-        if (gamingQuestion && /(gaming|جيمنج|rtx|gtx|rx\\s?\\d|quadro|p\\d{3,4}|radeon|geforce)/i.test(haystack)) value += 5;
-        if (requestedTwoGb && /2\\s?gb|2\\s?جيجا|2\\s?غ\\.?ب/i.test(p.gpu || "")) value += 8;
+        if (gamingQuestion && /(gaming|جيمنج|rtx|gtx|rx\s?\d|quadro|p\d{3,4}|radeon|geforce)/i.test(haystack)) value += 5;
+        if (requestedTwoGb && /2\s?gb|2\s?جيجا|2\s?غ\.?ب/i.test(p.gpu || "")) value += 8;
         if (budget !== null && budget > 0) value += p.price <= budget ? 4 : -Math.min(6, (p.price - budget) / budget * 6);
         if (p.is_featured) value += 1;
         return value;
