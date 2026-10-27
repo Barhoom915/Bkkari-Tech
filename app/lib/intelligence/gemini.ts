@@ -99,7 +99,8 @@ async function askAshna(
           temperature: 0.3,
           max_tokens: maxTokens,
         }),
-      }
+      },
+      timeoutMs
     );
 
     if (!res.ok) {
@@ -131,7 +132,6 @@ async function askAshna(
     console.error(
       "NOVATEK Ashna request failed:",
       getErrorBody(error)
-      , timeoutMs
     );
 
     return null;
@@ -172,7 +172,8 @@ async function askGroq(
           temperature: 0.3,
           max_tokens: maxTokens,
         }),
-      }
+      },
+      timeoutMs
     );
 
     if (!res.ok) {
@@ -201,7 +202,6 @@ async function askGroq(
     console.error(
       "NOVATEK Groq request failed:",
       getErrorBody(error)
-      , timeoutMs
     );
 
     return null;
@@ -245,7 +245,8 @@ async function askOpenRouter(
           temperature: 0.3,
           max_tokens: maxTokens,
         }),
-      }
+      },
+      timeoutMs
     );
 
     if (!res.ok) {
@@ -274,7 +275,6 @@ async function askOpenRouter(
     console.error(
       "NOVATEK OpenRouter request failed:",
       getErrorBody(error)
-      , timeoutMs
     );
 
     return null;
@@ -330,7 +330,8 @@ async function askGeminiProvider(
             },
           },
         }),
-      }
+      },
+      timeoutMs
     );
 
     if (!res.ok) {
@@ -368,7 +369,6 @@ async function askGeminiProvider(
     console.error(
       "NOVATEK Gemini request failed:",
       getErrorBody(error)
-      , timeoutMs
     );
 
     return null;
@@ -400,10 +400,6 @@ export async function askGeminiWithMetadata(
     { name: "OpenRouter", model: process.env.OPENROUTER_MODEL || "openrouter/free", fn: (timeoutMs = TIMEOUT_MS) => askOpenRouter(input, history, maxTokens, timeoutMs) },
     { name: "Gemini", model: process.env.GEMINI_MODEL || "gemini-3.8-flash", fn: (timeoutMs = TIMEOUT_MS) => askGeminiProvider(input, history, maxTokens, timeoutMs) },
   ];
-  if (options.fastMode) {
-    const priority = ["Groq", "Gemini", "Ashna", "OpenRouter"];
-    providers.sort((a, b) => priority.indexOf(a.name) - priority.indexOf(b.name));
-  }
   if (options.fastMode) {
     const priority = ["Groq", "Gemini", "Ashna", "OpenRouter"];
     providers.sort((a, b) => priority.indexOf(a.name) - priority.indexOf(b.name));
