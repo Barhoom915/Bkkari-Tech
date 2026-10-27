@@ -47,6 +47,8 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", text: WELCOME_MESSAGE },
   ]);
+  const [typingMessageIndex, setTypingMessageIndex] = useState<number | null>(null);
+  const [typedText, setTypedText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentSessionId = useRef<string>(`${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
@@ -64,7 +66,26 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, loading, open, expanded, historyOpen]);
+  }, [messages, loading, open, expanded, historyOpen, typedText]);
+
+  useEffect(() => {
+    if (typingMessageIndex === null || !messages[typingMessageIndex]) {
+      setTypedText("");
+      return;
+    }
+    const fullText = messages[typingMessageIndex].text;
+    let position = 0;
+    setTypedText("");
+    const timer = window.setInterval(() => {
+      position = Math.min(position + (position < 100 ? 2 : 3), fullText.length);
+      setTypedText(fullText.slice(0, position));
+      if (position >= fullText.length) {
+        window.clearInterval(timer);
+        setTypingMessageIndex(null);
+      }
+    }, 16);
+    return () => window.clearInterval(timer);
+  }, [messages, typingMessageIndex]);
 
   function saveSession(nextMessages: ChatMessage[]) {
     if (!nextMessages.some((m) => m.role === "user")) return;
@@ -110,6 +131,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
         products: Array.isArray(data.products) ? data.products.slice(0, 3) : [],
       }];
       setMessages(completed);
+      setTypingMessageIndex(completed.length - 1);
       saveSession(completed);
     } catch {
       const completed = [...next, {
@@ -131,6 +153,8 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
   function startNewChat() {
     saveSession(messages);
     currentSessionId.current = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setTypingMessageIndex(null);
+    setTypedText("");
     setMessages([{ role: "assistant", text: WELCOME_MESSAGE }]);
     setInput("");
     setHistoryOpen(false);
@@ -138,6 +162,8 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
 
   function restoreSession(session: ChatSession) {
     currentSessionId.current = session.id;
+    setTypingMessageIndex(null);
+    setTypedText("");
     setMessages(session.messages);
     setHistoryOpen(false);
   }
@@ -163,7 +189,7 @@ export default function AIChat({ embedded = false }: { embedded?: boolean }) {
     <div className="ai-chat-messages" aria-live="polite" aria-relevant="additions text">
       {messages.map((m, i) => (
         <div key={i} className={`ai-chat-message-row ${m.role}`}>
-          <div className={`ai-msg ${m.role}`}>{m.text}</div>
+          <div className={`ai-msg ${m.role}`} dir="auto">{m.role === "assistant" && i === typingMessageIndex ? typedText : m.text}</div>
           {m.role === "assistant" && m.products && m.products.length > 0 && (
             <div className="ai-chat-product-list" aria-label="أجهزة من متجر NOVATEK">
               {m.products.map((product) => (
