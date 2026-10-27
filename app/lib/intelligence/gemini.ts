@@ -374,6 +374,8 @@ export type AskOptions = {
   maxTokens?: number;
   /** Stop trying further providers once this many ms have passed since the call started. */
   deadlineMs?: number;
+  /** Prefer lower-latency providers for short structured tasks such as comparisons. */
+  fastMode?: boolean;
 };
 
 export async function askGeminiWithMetadata(
@@ -390,6 +392,10 @@ export async function askGeminiWithMetadata(
     { name: "OpenRouter", model: process.env.OPENROUTER_MODEL || "openrouter/free", fn: () => askOpenRouter(input, history, maxTokens) },
     { name: "Gemini", model: process.env.GEMINI_MODEL || "gemini-3.8-flash", fn: () => askGeminiProvider(input, history, maxTokens) },
   ];
+  if (options.fastMode) {
+    const priority = ["Groq", "Gemini", "Ashna", "OpenRouter"];
+    providers.sort((a, b) => priority.indexOf(a.name) - priority.indexOf(b.name));
+  }
 
   for (const provider of providers) {
     if (Date.now() - startedAt > deadlineMs) {
